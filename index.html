@@ -4,1260 +4,457 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>Solar Checkup — Panel Health Analyzer</title>
-<meta name="description" content="Free tool to analyze your Enphase solar panels for underperformance, degradation, and failing microinverters. Runs in your browser — no data collected.">
+<meta name="description" content="Free tool to analyze your Enphase solar panels for underperformance, degradation, and failing microinverters.">
 <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>☀️</text></svg>">
 <link href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@400;500;600;700&family=DM+Mono:wght@400;500&display=swap" rel="stylesheet">
 <style>
-  :root {
-    --bg: #0c0f14;
-    --bg-card: #141820;
-    --bg-card-hover: #1a1f2a;
-    --border: #1e2530;
-    --border-focus: #3b82f6;
-    --text: #e2e8f0;
-    --text-muted: #64748b;
-    --text-dim: #475569;
-    --accent: #f59e0b;
-    --accent-glow: rgba(245, 158, 11, 0.15);
-    --green: #22c55e;
-    --green-bg: rgba(34, 197, 94, 0.1);
-    --yellow: #eab308;
-    --yellow-bg: rgba(234, 179, 8, 0.1);
-    --orange: #f97316;
-    --orange-bg: rgba(249, 115, 22, 0.1);
-    --red: #ef4444;
-    --red-bg: rgba(239, 68, 68, 0.1);
-    --blue: #3b82f6;
-    --blue-bg: rgba(59, 130, 246, 0.1);
-  }
-
-  * { margin: 0; padding: 0; box-sizing: border-box; }
-
-  body {
-    font-family: 'DM Sans', sans-serif;
-    background: var(--bg);
-    color: var(--text);
-    min-height: 100vh;
-    line-height: 1.6;
-  }
-
-  .container {
-    max-width: 960px;
-    margin: 0 auto;
-    padding: 2rem 1.5rem;
-  }
-
-  /* Header */
-  .header {
-    text-align: center;
-    padding: 2rem 0 2.5rem;
-    border-bottom: 1px solid var(--border);
-    margin-bottom: 2rem;
-  }
-  .header-icon { font-size: 2.5rem; margin-bottom: 0.5rem; }
-  .header h1 {
-    font-size: 2rem;
-    font-weight: 700;
-    letter-spacing: -0.03em;
-    background: linear-gradient(135deg, var(--accent), #fbbf24);
-    -webkit-background-clip: text;
-    -webkit-text-fill-color: transparent;
-    background-clip: text;
-  }
-  .header p {
-    color: var(--text-muted);
-    font-size: 0.95rem;
-    margin-top: 0.5rem;
-    max-width: 540px;
-    margin-left: auto;
-    margin-right: auto;
-  }
-  .header .badges {
-    display: flex;
-    gap: 0.6rem;
-    justify-content: center;
-    margin-top: 1rem;
-    flex-wrap: wrap;
-  }
-  .header .pill {
-    display: inline-flex;
-    align-items: center;
-    gap: 0.35rem;
-    padding: 0.35rem 0.7rem;
-    background: var(--bg-card);
-    border: 1px solid var(--border);
-    border-radius: 6px;
-    font-size: 0.76rem;
-    color: var(--text-muted);
-  }
-  .pill svg { flex-shrink: 0; }
-
-  /* Steps */
-  .step {
-    background: var(--bg-card);
-    border: 1px solid var(--border);
-    border-radius: 12px;
-    padding: 1.5rem;
-    margin-bottom: 1.5rem;
-    transition: border-color 0.2s;
-  }
-  .step.active { border-color: var(--border-focus); }
-  .step.complete { border-color: var(--green); opacity: 0.7; }
-  .step-header {
-    display: flex;
-    align-items: center;
-    gap: 0.75rem;
-    margin-bottom: 1rem;
-  }
-  .step-number {
-    width: 28px; height: 28px;
-    border-radius: 50%;
-    background: var(--border);
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    font-size: 0.8rem;
-    font-weight: 600;
-    font-family: 'DM Mono', monospace;
-    flex-shrink: 0;
-  }
-  .step.active .step-number { background: var(--blue); }
-  .step.complete .step-number { background: var(--green); }
-  .step-title { font-size: 1.05rem; font-weight: 600; }
-  .step-desc { font-size: 0.88rem; color: var(--text-muted); line-height: 1.6; }
-
-  /* Form elements */
-  label {
-    display: block;
-    font-size: 0.85rem;
-    font-weight: 500;
-    color: var(--text-muted);
-    margin-bottom: 0.35rem;
-  }
-  input, select {
-    width: 100%;
-    padding: 0.6rem 0.8rem;
-    background: var(--bg);
-    border: 1px solid var(--border);
-    border-radius: 8px;
-    color: var(--text);
-    font-family: 'DM Mono', monospace;
-    font-size: 0.9rem;
-    outline: none;
-    transition: border-color 0.2s;
-  }
-  input:focus, select:focus { border-color: var(--border-focus); }
-  input::placeholder { color: var(--text-dim); }
-  select { cursor: pointer; }
-  select option { background: var(--bg-card); }
-  textarea {
-    width: 100%;
-    padding: 0.8rem;
-    background: var(--bg);
-    border: 1px solid var(--border);
-    border-radius: 8px;
-    color: var(--text);
-    font-family: 'DM Mono', monospace;
-    font-size: 0.82rem;
-    resize: vertical;
-    line-height: 1.5;
-    outline: none;
-    transition: border-color 0.2s;
-  }
-  textarea:focus { border-color: var(--border-focus); }
-  textarea::placeholder { color: var(--text-dim); }
-
-  .form-row {
-    display: grid;
-    grid-template-columns: 1fr 1fr;
-    gap: 1rem;
-    margin-bottom: 1rem;
-  }
-  .form-group { margin-bottom: 1rem; }
-
-  .help-text {
-    font-size: 0.78rem;
-    color: var(--text-dim);
-    margin-top: 0.25rem;
-  }
-
-  /* Buttons */
-  .btn {
-    display: inline-flex;
-    align-items: center;
-    gap: 0.5rem;
-    padding: 0.7rem 1.4rem;
-    border: none;
-    border-radius: 8px;
-    font-family: 'DM Sans', sans-serif;
-    font-size: 0.9rem;
-    font-weight: 600;
-    cursor: pointer;
-    transition: all 0.2s;
-  }
-  .btn-primary {
-    background: var(--accent);
-    color: #0c0f14;
-  }
-  .btn-primary:hover { background: #fbbf24; }
-  .btn-primary:disabled { opacity: 0.5; cursor: not-allowed; }
-  .btn-secondary {
-    background: var(--bg);
-    color: var(--text);
-    border: 1px solid var(--border);
-  }
-  .btn-secondary:hover { border-color: var(--text-muted); }
-  .btn-sm {
-    font-size: 0.78rem;
-    padding: 0.35rem 0.7rem;
-  }
-
-  /* Status messages */
-  .status {
-    display: flex;
-    align-items: flex-start;
-    gap: 0.5rem;
-    padding: 0.6rem 0.8rem;
-    border-radius: 8px;
-    font-size: 0.85rem;
-    margin-top: 0.75rem;
-  }
-  .status-info { background: var(--blue-bg); color: var(--blue); }
-  .status-success { background: var(--green-bg); color: var(--green); }
-  .status-error { background: var(--red-bg); color: var(--red); }
-  .status-warning { background: var(--yellow-bg); color: var(--yellow); }
-
-  /* Instructions box */
-  .instructions-box {
-    background: var(--bg);
-    border: 1px solid var(--border);
-    border-radius: 8px;
-    padding: 1.2rem;
-    margin-bottom: 1rem;
-    font-size: 0.88rem;
-    line-height: 1.8;
-    color: var(--text-muted);
-  }
-  .instructions-box .inst-step {
-    display: flex;
-    gap: 0.6rem;
-    margin-bottom: 0.6rem;
-  }
-  .instructions-box .inst-step:last-child { margin-bottom: 0; }
-  .inst-num {
-    flex-shrink: 0;
-    width: 22px; height: 22px;
-    border-radius: 50%;
-    background: var(--border);
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    font-size: 0.72rem;
-    font-weight: 600;
-    font-family: 'DM Mono', monospace;
-    margin-top: 0.15rem;
-  }
-  .inst-text { flex: 1; }
-  .inst-text code {
-    background: var(--bg-card);
-    padding: 0.15rem 0.4rem;
-    border-radius: 3px;
-    font-family: 'DM Mono', monospace;
-    font-size: 0.82rem;
-    color: var(--accent);
-  }
-  .inst-url-box {
-    display: flex;
-    align-items: center;
-    gap: 0.5rem;
-    margin: 0.4rem 0;
-    padding: 0.5rem 0.7rem;
-    background: var(--bg-card);
-    border: 1px solid var(--border);
-    border-radius: 6px;
-    font-family: 'DM Mono', monospace;
-    font-size: 0.82rem;
-    color: var(--accent);
-    word-break: break-all;
-  }
-  .inst-url-box .url-text { flex: 1; user-select: all; }
-
-  .collapsible-toggle {
-    background: none;
-    border: none;
-    color: var(--blue);
-    font-family: 'DM Sans', sans-serif;
-    font-size: 0.85rem;
-    cursor: pointer;
-    padding: 0;
-    text-decoration: underline;
-    text-underline-offset: 2px;
-  }
-  .collapsible-content { display: none; }
-  .collapsible-content.open { display: block; }
-
-  .token-instructions {
-    background: var(--bg);
-    border: 1px solid var(--border);
-    border-radius: 8px;
-    padding: 1rem;
-    margin-top: 0.5rem;
-    font-size: 0.85rem;
-    line-height: 1.7;
-    color: var(--text-muted);
-  }
-  .token-instructions ol { padding-left: 1.2rem; }
-  .token-instructions li { margin-bottom: 0.3rem; }
-  .token-instructions a {
-    color: var(--blue);
-    text-decoration: none;
-  }
-  .token-instructions a:hover { text-decoration: underline; }
-
-  /* Report */
-  #report { display: none; }
-  #report.visible { display: block; }
-
-  .report-header {
-    text-align: center;
-    padding: 2rem 0;
-    margin-bottom: 1.5rem;
-    border-bottom: 1px solid var(--border);
-  }
-  .report-header h2 { font-size: 1.5rem; font-weight: 700; }
-  .report-timestamp {
-    color: var(--text-muted);
-    font-size: 0.85rem;
-    margin-top: 0.25rem;
-  }
-
-  .summary-grid {
-    display: grid;
-    grid-template-columns: repeat(auto-fit, minmax(140px, 1fr));
-    gap: 1rem;
-    margin-bottom: 2rem;
-  }
-  .summary-card {
-    background: var(--bg-card);
-    border: 1px solid var(--border);
-    border-radius: 10px;
-    padding: 1rem;
-    text-align: center;
-  }
-  .summary-card .value {
-    font-size: 1.8rem;
-    font-weight: 700;
-    font-family: 'DM Mono', monospace;
-  }
-  .summary-card .label {
-    font-size: 0.78rem;
-    color: var(--text-muted);
-    margin-top: 0.15rem;
-  }
-
-  .overall-status {
-    text-align: center;
-    padding: 1.5rem;
-    border-radius: 12px;
-    margin-bottom: 2rem;
-    font-size: 1.1rem;
-    font-weight: 600;
-  }
-  .overall-healthy {
-    background: var(--green-bg);
-    border: 1px solid rgba(34, 197, 94, 0.3);
-    color: var(--green);
-  }
-  .overall-warning {
-    background: var(--yellow-bg);
-    border: 1px solid rgba(234, 179, 8, 0.3);
-    color: var(--yellow);
-  }
-  .overall-alert {
-    background: var(--red-bg);
-    border: 1px solid rgba(239, 68, 68, 0.3);
-    color: var(--red);
-  }
-
-  /* Panel table */
-  .panel-table-wrap { overflow-x: auto; margin-bottom: 2rem; }
-  .panel-table {
-    width: 100%;
-    border-collapse: collapse;
-    font-size: 0.85rem;
-  }
-  .panel-table th {
-    text-align: left;
-    padding: 0.6rem 0.8rem;
-    border-bottom: 2px solid var(--border);
-    color: var(--text-muted);
-    font-weight: 600;
-    font-size: 0.75rem;
-    text-transform: uppercase;
-    letter-spacing: 0.05em;
-    white-space: nowrap;
-  }
-  .panel-table td {
-    padding: 0.6rem 0.8rem;
-    border-bottom: 1px solid var(--border);
-    font-family: 'DM Mono', monospace;
-    font-size: 0.82rem;
-    white-space: nowrap;
-  }
-  .panel-table tr:hover td { background: var(--bg-card-hover); }
-
-  .badge {
-    display: inline-block;
-    padding: 0.15rem 0.5rem;
-    border-radius: 4px;
-    font-size: 0.75rem;
-    font-weight: 600;
-    text-transform: uppercase;
-    letter-spacing: 0.03em;
-  }
-  .badge-excellent { background: var(--green-bg); color: var(--green); }
-  .badge-good { background: var(--blue-bg); color: var(--blue); }
-  .badge-fair { background: var(--yellow-bg); color: var(--yellow); }
-  .badge-watch { background: var(--orange-bg); color: var(--orange); }
-  .badge-alert { background: var(--red-bg); color: var(--red); }
-
-  /* Bar chart */
-  .bar-chart { margin-bottom: 2rem; }
-  .bar-chart h3 { font-size: 1rem; font-weight: 600; margin-bottom: 1rem; }
-  .bar-row {
-    display: flex;
-    align-items: center;
-    gap: 0.5rem;
-    margin-bottom: 0.4rem;
-  }
-  .bar-label {
-    width: 90px;
-    font-family: 'DM Mono', monospace;
-    font-size: 0.75rem;
-    color: var(--text-muted);
-    text-align: right;
-    flex-shrink: 0;
-  }
-  .bar-track {
-    flex: 1;
-    height: 22px;
-    background: var(--bg);
-    border-radius: 4px;
-    overflow: hidden;
-    position: relative;
-  }
-  .bar-fill {
-    height: 100%;
-    border-radius: 4px;
-    transition: width 0.5s ease;
-    position: relative;
-  }
-  .bar-value {
-    position: absolute;
-    right: 6px;
-    top: 50%;
-    transform: translateY(-50%);
-    font-family: 'DM Mono', monospace;
-    font-size: 0.7rem;
-    color: var(--bg);
-    font-weight: 600;
-  }
-  .bar-value-outside {
-    position: absolute;
-    top: 50%;
-    transform: translateY(-50%);
-    font-family: 'DM Mono', monospace;
-    font-size: 0.7rem;
-    color: var(--text-muted);
-    font-weight: 500;
-    white-space: nowrap;
-  }
-  .bar-avg-line {
-    position: absolute;
-    top: 0; bottom: 0;
-    width: 2px;
-    background: var(--accent);
-    z-index: 2;
-  }
-
-  /* Recommendations */
-  .recommendations {
-    background: var(--bg-card);
-    border: 1px solid var(--border);
-    border-radius: 12px;
-    padding: 1.5rem;
-    margin-bottom: 2rem;
-  }
-  .recommendations h3 { font-size: 1rem; font-weight: 600; margin-bottom: 1rem; }
-  .rec-item {
-    display: flex;
-    gap: 0.75rem;
-    padding: 0.75rem 0;
-    border-bottom: 1px solid var(--border);
-    font-size: 0.9rem;
-    line-height: 1.5;
-  }
-  .rec-item:last-child { border-bottom: none; }
-  .rec-icon { font-size: 1.1rem; flex-shrink: 0; margin-top: 0.1rem; }
-
-  .report-actions {
-    display: flex;
-    gap: 1rem;
-    justify-content: center;
-    margin: 2rem 0;
-    flex-wrap: wrap;
-  }
-
-  /* Footer */
-  .footer {
-    text-align: center;
-    padding: 2rem 0;
-    border-top: 1px solid var(--border);
-    margin-top: 2rem;
-    font-size: 0.8rem;
-    color: var(--text-dim);
-  }
-  .footer a {
-    color: var(--text-muted);
-    text-decoration: none;
-  }
-  .footer a:hover { color: var(--text); }
-
-  /* Print */
-  @media print {
-    body { background: white; color: black; }
-    .container { max-width: 100%; }
-    #setup, .report-actions, .footer { display: none; }
-    .step, .summary-card, .recommendations, .overall-status {
-      border-color: #ddd;
-      background: #f9f9f9;
-    }
-    .badge { border: 1px solid currentColor; }
-  }
-
-  @media (max-width: 600px) {
-    .form-row { grid-template-columns: 1fr; }
-    .summary-grid { grid-template-columns: repeat(2, 1fr); }
-    .bar-label { width: 70px; font-size: 0.7rem; }
-  }
+:root{--bg:#0c0f14;--bg-card:#141820;--bg-card-hover:#1a1f2a;--border:#1e2530;--border-focus:#3b82f6;--text:#e2e8f0;--text-muted:#64748b;--text-dim:#475569;--accent:#f59e0b;--green:#22c55e;--green-bg:rgba(34,197,94,.1);--yellow:#eab308;--yellow-bg:rgba(234,179,8,.1);--orange:#f97316;--orange-bg:rgba(249,115,22,.1);--red:#ef4444;--red-bg:rgba(239,68,68,.1);--blue:#3b82f6;--blue-bg:rgba(59,130,246,.1)}
+*{margin:0;padding:0;box-sizing:border-box}
+body{font-family:'DM Sans',sans-serif;background:var(--bg);color:var(--text);min-height:100vh;line-height:1.6}
+.container{max-width:960px;margin:0 auto;padding:2rem 1.5rem}
+.header{text-align:center;padding:2rem 0 2.5rem;border-bottom:1px solid var(--border);margin-bottom:2rem}
+.header-icon{font-size:2.5rem;margin-bottom:.5rem}
+.header h1{font-size:2rem;font-weight:700;letter-spacing:-.03em;background:linear-gradient(135deg,var(--accent),#fbbf24);-webkit-background-clip:text;-webkit-text-fill-color:transparent;background-clip:text}
+.header p{color:var(--text-muted);font-size:.95rem;margin-top:.5rem;max-width:540px;margin-left:auto;margin-right:auto}
+.badges{display:flex;gap:.6rem;justify-content:center;margin-top:1rem;flex-wrap:wrap}
+.pill{display:inline-flex;align-items:center;gap:.35rem;padding:.35rem .7rem;background:var(--bg-card);border:1px solid var(--border);border-radius:6px;font-size:.76rem;color:var(--text-muted)}
+.pill svg{flex-shrink:0}
+.bmc-link{display:inline-flex;align-items:center;gap:.4rem;padding:.4rem .8rem;background:#FFDD00;border:none;border-radius:6px;font-size:.78rem;font-weight:600;color:#000;text-decoration:none;transition:opacity .2s}
+.bmc-link:hover{opacity:.85}
+.step{background:var(--bg-card);border:1px solid var(--border);border-radius:12px;padding:1.5rem;margin-bottom:1.5rem;transition:border-color .2s}
+.step.active{border-color:var(--border-focus)}.step.complete{border-color:var(--green);opacity:.7}
+.step-header{display:flex;align-items:center;gap:.75rem;margin-bottom:1rem}
+.step-number{width:28px;height:28px;border-radius:50%;background:var(--border);display:flex;align-items:center;justify-content:center;font-size:.8rem;font-weight:600;font-family:'DM Mono',monospace;flex-shrink:0}
+.step.active .step-number{background:var(--blue)}.step.complete .step-number{background:var(--green)}
+.step-title{font-size:1.05rem;font-weight:600}
+.step-desc{font-size:.88rem;color:var(--text-muted);line-height:1.6}
+label{display:block;font-size:.85rem;font-weight:500;color:var(--text-muted);margin-bottom:.35rem}
+input,select{width:100%;padding:.6rem .8rem;background:var(--bg);border:1px solid var(--border);border-radius:8px;color:var(--text);font-family:'DM Mono',monospace;font-size:.9rem;outline:none;transition:border-color .2s}
+input:focus,select:focus{border-color:var(--border-focus)}
+input::placeholder{color:var(--text-dim)}
+textarea{width:100%;padding:.8rem;background:var(--bg);border:1px solid var(--border);border-radius:8px;color:var(--text);font-family:'DM Mono',monospace;font-size:.82rem;resize:vertical;line-height:1.5;outline:none}
+textarea:focus{border-color:var(--border-focus)}
+textarea::placeholder{color:var(--text-dim)}
+.form-row{display:grid;grid-template-columns:1fr 1fr;gap:1rem;margin-bottom:1rem}
+.form-group{margin-bottom:1rem}
+.help-text{font-size:.78rem;color:var(--text-dim);margin-top:.25rem}
+.btn{display:inline-flex;align-items:center;gap:.5rem;padding:.7rem 1.4rem;border:none;border-radius:8px;font-family:'DM Sans',sans-serif;font-size:.9rem;font-weight:600;cursor:pointer;transition:all .2s}
+.btn-primary{background:var(--accent);color:#0c0f14}.btn-primary:hover{background:#fbbf24}.btn-primary:disabled{opacity:.5;cursor:not-allowed}
+.btn-secondary{background:var(--bg);color:var(--text);border:1px solid var(--border)}.btn-secondary:hover{border-color:var(--text-muted)}
+.btn-sm{font-size:.78rem;padding:.35rem .7rem}
+.status{display:flex;align-items:flex-start;gap:.5rem;padding:.6rem .8rem;border-radius:8px;font-size:.85rem;margin-top:.75rem}
+.status-info{background:var(--blue-bg);color:var(--blue)}.status-success{background:var(--green-bg);color:var(--green)}.status-error{background:var(--red-bg);color:var(--red)}.status-warning{background:var(--yellow-bg);color:var(--yellow)}
+.instructions-box{background:var(--bg);border:1px solid var(--border);border-radius:8px;padding:1.2rem;margin-bottom:1rem;font-size:.88rem;line-height:1.8;color:var(--text-muted)}
+.inst-step{display:flex;gap:.6rem;margin-bottom:.6rem}.inst-step:last-child{margin-bottom:0}
+.inst-num{flex-shrink:0;width:22px;height:22px;border-radius:50%;background:var(--border);display:flex;align-items:center;justify-content:center;font-size:.72rem;font-weight:600;font-family:'DM Mono',monospace;margin-top:.15rem}
+.inst-text{flex:1}
+.inst-text code{background:var(--bg-card);padding:.15rem .4rem;border-radius:3px;font-family:'DM Mono',monospace;font-size:.82rem;color:var(--accent)}
+.inst-url-box{display:flex;align-items:center;gap:.5rem;margin:.4rem 0;padding:.5rem .7rem;background:var(--bg-card);border:1px solid var(--border);border-radius:6px;font-family:'DM Mono',monospace;font-size:.82rem;color:var(--accent);word-break:break-all}
+.collapsible-toggle{background:none;border:none;color:var(--blue);font-family:'DM Sans',sans-serif;font-size:.85rem;cursor:pointer;padding:0;text-decoration:underline;text-underline-offset:2px}
+.collapsible-content{display:none}.collapsible-content.open{display:block}
+.token-instructions{background:var(--bg);border:1px solid var(--border);border-radius:8px;padding:1rem;margin-top:.5rem;font-size:.85rem;line-height:1.7;color:var(--text-muted)}
+.token-instructions ol{padding-left:1.2rem}.token-instructions li{margin-bottom:.3rem}
+.token-instructions a{color:var(--blue);text-decoration:none}.token-instructions a:hover{text-decoration:underline}
+.spec-match{background:var(--bg);border:1px solid var(--green);border-radius:8px;padding:1rem;margin-top:.5rem;font-size:.85rem}
+.spec-match-title{font-weight:600;color:var(--green);margin-bottom:.5rem}
+.spec-match-grid{display:grid;grid-template-columns:1fr 1fr;gap:.3rem 1rem;font-size:.82rem;color:var(--text-muted)}
+.spec-match-grid .spec-val{font-family:'DM Mono',monospace;color:var(--text)}
+#report{display:none}#report.visible{display:block}
+.report-header{text-align:center;padding:2rem 0;margin-bottom:1.5rem;border-bottom:1px solid var(--border)}
+.report-header h2{font-size:1.5rem;font-weight:700}
+.report-timestamp{color:var(--text-muted);font-size:.85rem;margin-top:.25rem}
+.summary-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(140px,1fr));gap:1rem;margin-bottom:2rem}
+.summary-card{background:var(--bg-card);border:1px solid var(--border);border-radius:10px;padding:1rem;text-align:center}
+.summary-card .value{font-size:1.8rem;font-weight:700;font-family:'DM Mono',monospace}
+.summary-card .label{font-size:.78rem;color:var(--text-muted);margin-top:.15rem}
+.overall-status{text-align:center;padding:1.5rem;border-radius:12px;margin-bottom:2rem;font-size:1.1rem;font-weight:600}
+.overall-healthy{background:var(--green-bg);border:1px solid rgba(34,197,94,.3);color:var(--green)}
+.overall-warning{background:var(--yellow-bg);border:1px solid rgba(234,179,8,.3);color:var(--yellow)}
+.overall-alert{background:var(--red-bg);border:1px solid rgba(239,68,68,.3);color:var(--red)}
+.panel-table-wrap{overflow-x:auto;margin-bottom:2rem}
+.panel-table{width:100%;border-collapse:collapse;font-size:.85rem}
+.panel-table th{text-align:left;padding:.6rem .8rem;border-bottom:2px solid var(--border);color:var(--text-muted);font-weight:600;font-size:.75rem;text-transform:uppercase;letter-spacing:.05em;white-space:nowrap}
+.panel-table td{padding:.6rem .8rem;border-bottom:1px solid var(--border);font-family:'DM Mono',monospace;font-size:.82rem;white-space:nowrap}
+.panel-table tr:hover td{background:var(--bg-card-hover)}
+.badge{display:inline-block;padding:.15rem .5rem;border-radius:4px;font-size:.75rem;font-weight:600;text-transform:uppercase;letter-spacing:.03em}
+.badge-excellent{background:var(--green-bg);color:var(--green)}.badge-good{background:var(--blue-bg);color:var(--blue)}.badge-fair{background:var(--yellow-bg);color:var(--yellow)}.badge-watch{background:var(--orange-bg);color:var(--orange)}.badge-alert{background:var(--red-bg);color:var(--red)}
+.bar-chart{margin-bottom:2rem}.bar-chart h3{font-size:1rem;font-weight:600;margin-bottom:1rem}
+.bar-row{display:flex;align-items:center;gap:.5rem;margin-bottom:.4rem}
+.bar-label{width:90px;font-family:'DM Mono',monospace;font-size:.75rem;color:var(--text-muted);text-align:right;flex-shrink:0}
+.bar-track{flex:1;height:22px;background:var(--bg);border-radius:4px;overflow:hidden;position:relative}
+.bar-fill{height:100%;border-radius:4px;transition:width .5s ease;position:relative}
+.bar-value{position:absolute;right:6px;top:50%;transform:translateY(-50%);font-family:'DM Mono',monospace;font-size:.7rem;color:var(--bg);font-weight:600}
+.bar-value-outside{position:absolute;top:50%;transform:translateY(-50%);font-family:'DM Mono',monospace;font-size:.7rem;color:var(--text-muted);font-weight:500;white-space:nowrap}
+.bar-avg-line{position:absolute;top:0;bottom:0;width:2px;background:var(--accent);z-index:2}
+.recommendations{background:var(--bg-card);border:1px solid var(--border);border-radius:12px;padding:1.5rem;margin-bottom:2rem}
+.recommendations h3{font-size:1rem;font-weight:600;margin-bottom:1rem}
+.rec-item{display:flex;gap:.75rem;padding:.75rem 0;border-bottom:1px solid var(--border);font-size:.9rem;line-height:1.5}
+.rec-item:last-child{border-bottom:none}.rec-icon{font-size:1.1rem;flex-shrink:0;margin-top:.1rem}
+.methodology{background:var(--bg-card);border:1px solid var(--border);border-radius:12px;padding:1.5rem;margin-bottom:2rem;font-size:.85rem;color:var(--text-muted);line-height:1.7}
+.methodology h3{font-size:1rem;font-weight:600;margin-bottom:.75rem;color:var(--text)}
+.methodology h4{font-size:.88rem;font-weight:600;margin-top:1rem;margin-bottom:.3rem;color:var(--text)}
+.meth-table{width:100%;border-collapse:collapse;margin:.5rem 0;font-size:.82rem}
+.meth-table td{padding:.3rem .6rem;border-bottom:1px solid var(--border)}
+.meth-table td:first-child{font-family:'DM Mono',monospace;white-space:nowrap;width:120px}
+.report-actions{display:flex;gap:1rem;justify-content:center;margin:2rem 0;flex-wrap:wrap}
+.footer{text-align:center;padding:2rem 0;border-top:1px solid var(--border);margin-top:2rem;font-size:.8rem;color:var(--text-dim)}
+.footer a{color:var(--text-muted);text-decoration:none}.footer a:hover{color:var(--text)}
+@media print{body{background:#fff;color:#000}.container{max-width:100%}#setup,.report-actions,.footer{display:none}.step,.summary-card,.recommendations,.overall-status,.methodology{border-color:#ddd;background:#f9f9f9}.badge{border:1px solid currentColor}}
+@media(max-width:600px){.form-row{grid-template-columns:1fr}.summary-grid{grid-template-columns:repeat(2,1fr)}.bar-label{width:70px;font-size:.7rem}}
 </style>
 </head>
 <body>
-
 <div class="container">
-
-  <!-- Header -->
   <div class="header">
     <div class="header-icon">☀️</div>
     <h1>Solar Checkup</h1>
     <p>Free tool to check your Enphase solar panels for underperformance, degradation, and failing microinverters.</p>
     <div class="badges">
-      <span class="pill">
-        <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="11" width="18" height="11" rx="2"/><path d="M7 11V7a5 5 0 0110 0v4"/></svg>
-        No data collected
-      </span>
-      <span class="pill">
-        <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/></svg>
-        Runs in your browser
-      </span>
-      <span class="pill">
-        <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M9 19c-5 1.5-5-2.5-7-3m14 6v-3.87a3.37 3.37 0 00-.94-2.61c3.14-.35 6.44-1.54 6.44-7A5.44 5.44 0 0020 4.77 5.07 5.07 0 0019.91 1S18.73.65 16 2.48a13.38 13.38 0 00-7 0C6.27.65 5.09 1 5.09 1A5.07 5.07 0 005 4.77a5.44 5.44 0 00-1.5 3.78c0 5.42 3.3 6.61 6.44 7A3.37 3.37 0 009 18.13V22"/></svg>
-        Open source
-      </span>
+      <span class="pill"><svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="11" width="18" height="11" rx="2"/><path d="M7 11V7a5 5 0 0110 0v4"/></svg> No data collected</span>
+      <span class="pill"><svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/></svg> Runs in your browser</span>
+      <span class="pill"><svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M9 19c-5 1.5-5-2.5-7-3m14 6v-3.87a3.37 3.37 0 00-.94-2.61c3.14-.35 6.44-1.54 6.44-7A5.44 5.44 0 0020 4.77 5.07 5.07 0 0019.91 1S18.73.65 16 2.48a13.38 13.38 0 00-7 0C6.27.65 5.09 1 5.09 1A5.07 5.07 0 005 4.77a5.44 5.44 0 00-1.5 3.78c0 5.42 3.3 6.61 6.44 7A3.37 3.37 0 009 18.13V22"/></svg> Open source</span>
+      <a href="https://buymeacoffee.com/MTNEARZ" target="_blank" class="bmc-link">☕ Buy me a coffee</a>
     </div>
   </div>
 
-  <!-- Setup Section -->
   <div id="setup">
-
-    <!-- Step 1: Get Data -->
     <div class="step active" id="step1">
-      <div class="step-header">
-        <div class="step-number">1</div>
-        <div class="step-title">Get your panel data from the Enphase Gateway</div>
-      </div>
-      <p class="step-desc" style="margin-bottom:1rem;">
-        Your Enphase IQ Gateway has a local API that reports per-panel production data.
-        You'll open it in your browser, copy the data, and paste it here. Takes about a minute.
-      </p>
-
+      <div class="step-header"><div class="step-number">1</div><div class="step-title">Get your panel data from the Enphase Gateway</div></div>
+      <p class="step-desc" style="margin-bottom:1rem">Your Enphase IQ Gateway has a local API that reports per-panel production data. Open it in your browser, copy the data, and paste it here.</p>
       <div class="instructions-box">
-        <div class="inst-step">
-          <span class="inst-num">1</span>
-          <div class="inst-text">
-            Open your gateway in a browser tab:
-            <code>https://YOUR_GATEWAY_IP</code><br>
-            <span style="font-size:0.82rem;">Find the IP in your router's device list, or in the Enphase app under System → Network.
-            If you get a security warning, click <strong>Advanced</strong> → <strong>Proceed</strong> (the gateway uses a self-signed certificate — this is normal).</span>
-          </div>
-        </div>
-        <div class="inst-step">
-          <span class="inst-num">2</span>
-          <div class="inst-text">
-            Log in to the gateway. If it asks for a token, you'll need to generate one:
-            <button class="collapsible-toggle" onclick="toggleHelp('tokenHelp')">How to get a token</button>
-            <div class="collapsible-content" id="tokenHelp">
-              <div class="token-instructions" style="margin-top:0.4rem;">
-                <ol>
-                  <li>Go to <a href="https://entrez.enphaseenergy.com/entrez_tokens" target="_blank" rel="noopener">entrez.enphaseenergy.com/entrez_tokens</a></li>
-                  <li>Log in with your Enphase account</li>
-                  <li>Enter your Gateway serial number (on the device label or in the Enphase app)</li>
-                  <li>Select <strong>"owner"</strong> as the role</li>
-                  <li>Click <strong>Generate</strong> and copy the token</li>
-                  <li>Paste it on the gateway login page and click Submit</li>
-                </ol>
-                <p style="margin-top:0.3rem;">Tokens last about 12 months. If you previously logged in through "Login with Enphase", you may already be authenticated.</p>
-              </div>
-            </div>
-          </div>
-        </div>
-        <div class="inst-step">
-          <span class="inst-num">3</span>
-          <div class="inst-text">
-            Once logged in, navigate to the inverter data URL in that same tab:
-            <div class="inst-url-box">
-              <span class="url-text">https://YOUR_GATEWAY_IP/api/v1/production/inverters</span>
-            </div>
-            <span style="font-size:0.82rem;">You should see a page of JSON data — text with square brackets and numbers. This is your per-panel production data.</span>
-          </div>
-        </div>
-        <div class="inst-step">
-          <span class="inst-num">4</span>
-          <div class="inst-text">
-            Select all the text on that page (<strong>Ctrl+A</strong> / <strong>⌘A</strong>), copy it (<strong>Ctrl+C</strong> / <strong>⌘C</strong>), and paste it below.
-          </div>
-        </div>
+        <div class="inst-step"><span class="inst-num">1</span><div class="inst-text">Open your gateway: <code>https://YOUR_GATEWAY_IP</code><br><span style="font-size:.82rem">Find the IP in your router or Enphase app (System → Network). Accept the certificate warning — this is normal.</span></div></div>
+        <div class="inst-step"><span class="inst-num">2</span><div class="inst-text">Log in. If it asks for a token: <button class="collapsible-toggle" onclick="toggleHelp('tokenHelp')">How to get a token</button><div class="collapsible-content" id="tokenHelp"><div class="token-instructions" style="margin-top:.4rem"><ol><li>Go to <a href="https://entrez.enphaseenergy.com/entrez_tokens" target="_blank">entrez.enphaseenergy.com/entrez_tokens</a></li><li>Log in with your Enphase account</li><li>Enter your Gateway serial number</li><li>Select <strong>owner</strong> → click <strong>Generate</strong></li><li>Copy the token, paste it on the gateway login, click Submit</li></ol><p style="margin-top:.3rem">Tokens last ~12 months.</p></div></div></div></div>
+        <div class="inst-step"><span class="inst-num">3</span><div class="inst-text">Once logged in, go to:<div class="inst-url-box"><span class="url-text">https://YOUR_GATEWAY_IP/api/v1/production/inverters</span></div><span style="font-size:.82rem">You'll see JSON data — text with brackets and numbers.</span></div></div>
+        <div class="inst-step"><span class="inst-num">4</span><div class="inst-text">Select all (<strong>Ctrl+A</strong>), copy (<strong>Ctrl+C</strong>), paste below.</div></div>
       </div>
-
       <div class="form-group">
         <label for="pasteData">Inverter Data (paste here)</label>
-        <textarea id="pasteData" rows="6" placeholder='[{"serialNumber":"123456789012","lastReportDate":1709000000,"devType":1,"lastReportWatts":245,"maxReportWatts":290}]'></textarea>
-        <div class="help-text">This data contains only microinverter serial numbers and wattage readings — no personal information.</div>
+        <textarea id="pasteData" rows="6" placeholder='[{"serialNumber":"123...","lastReportWatts":245,"maxReportWatts":290}]'></textarea>
+        <div class="help-text">Contains only serial numbers and wattage — no personal info.</div>
       </div>
-
-      <button class="btn btn-primary" id="btnLoadData" onclick="loadPastedData()">
-        Load Data →
-      </button>
+      <button class="btn btn-primary" onclick="loadPastedData()">Load Data →</button>
       <div id="loadStatus"></div>
     </div>
 
-    <!-- Step 2: System Info -->
-    <div class="step" id="step2" style="display:none;">
-      <div class="step-header">
-        <div class="step-number">2</div>
-        <div class="step-title">Tell us about your system</div>
+    <div class="step" id="step2" style="display:none">
+      <div class="step-header"><div class="step-number">2</div><div class="step-title">Tell us about your system</div></div>
+      <div id="detectedInfo" class="status status-success" style="margin-bottom:1rem"></div>
+      <div class="form-group">
+        <label for="panelModel">Panel Model</label>
+        <input type="text" id="panelModel" list="panelSuggestions" placeholder="Start typing, e.g. REC 400, LG 370, Hyundai 435..." autocomplete="off">
+        <datalist id="panelSuggestions"></datalist>
+        <div class="help-text">Start typing to search our panel database, or enter specs manually below.</div>
+        <div id="specMatchBox"></div>
       </div>
-
-      <div id="detectedInfo" class="status status-success" style="margin-bottom:1rem;"></div>
-
       <div class="form-row">
-        <div class="form-group">
-          <label for="panelModel">Panel Model (optional)</label>
-          <input type="text" id="panelModel" placeholder="e.g. REC 400AA Pure">
-        </div>
-        <div class="form-group">
-          <label for="panelWatts">Panel Rated Watts</label>
-          <input type="number" id="panelWatts" placeholder="e.g. 400">
-          <div class="help-text">Nameplate DC wattage — look on the back of a panel or on your install contract</div>
-        </div>
+        <div class="form-group"><label for="panelWatts">Panel Rated Watts (DC)</label><input type="number" id="panelWatts" placeholder="e.g. 400"><div class="help-text">Nameplate DC wattage from spec sheet or install contract</div></div>
+        <div class="form-group"><label for="panelPtcWatts">PTC Rating (optional)</label><input type="number" id="panelPtcWatts" placeholder="auto if blank"><div class="help-text">Real-world output. If blank, estimated as ~88% of DC.</div></div>
       </div>
-
       <div class="form-row">
-        <div class="form-group">
-          <label for="installDate">Approximate Install Date</label>
-          <input type="date" id="installDate">
-        </div>
-        <div class="form-group">
-          <label for="arrayTilt">Roof Tilt (degrees, optional)</label>
-          <input type="number" id="arrayTilt" placeholder="e.g. 22" min="0" max="90">
-        </div>
+        <div class="form-group"><label for="installDate">Approximate Install Date</label><input type="date" id="installDate"></div>
+        <div class="form-group"><label for="degradYear1">Year 1 Degradation %</label><input type="number" id="degradYear1" placeholder="2.0" step="0.1" min="0" max="10"><div class="help-text">Most panels: 2%. Check your warranty.</div></div>
       </div>
-
-      <button class="btn btn-primary" id="btnAnalyze" onclick="runAnalysis()">
-        Run Health Check ☀️
-      </button>
+      <div class="form-row">
+        <div class="form-group"><label for="degradAnnual">Annual Degradation %</label><input type="number" id="degradAnnual" placeholder="0.5" step="0.1" min="0" max="5"><div class="help-text">Most panels: 0.25–0.5%/year after year 1.</div></div>
+        <div class="form-group"><label for="arrayTilt">Roof Tilt (degrees, optional)</label><input type="number" id="arrayTilt" placeholder="e.g. 22" min="0" max="90"></div>
+      </div>
+      <button class="btn btn-primary" onclick="runAnalysis()">Run Health Check ☀️</button>
       <div id="analyzeStatus"></div>
     </div>
-
   </div>
 
-  <!-- Report Section -->
   <div id="report">
-
-    <div class="report-header">
-      <h2>☀️ Solar Checkup Report</h2>
-      <div class="report-timestamp" id="reportTimestamp"></div>
-      <div id="reportSystemInfo" style="color:var(--text-muted); font-size:0.85rem; margin-top:0.25rem;"></div>
-    </div>
-
+    <div class="report-header"><h2>☀️ Solar Checkup Report</h2><div class="report-timestamp" id="reportTimestamp"></div><div id="reportSystemInfo" style="color:var(--text-muted);font-size:.85rem;margin-top:.25rem"></div></div>
     <div id="overallStatus" class="overall-status overall-healthy"></div>
-
     <div class="summary-grid" id="summaryGrid"></div>
-
-    <!-- Max-ever bar chart -->
-    <div class="bar-chart" id="perfChart">
-      <h3>Panel Performance — Max Reported Watts</h3>
-      <div id="perfBars"></div>
-      <div style="display:flex; align-items:center; gap:0.5rem; margin-top:0.75rem; font-size:0.78rem; color:var(--text-muted);">
-        <div style="width:12px; height:2px; background:var(--accent);"></div>
-        Array average
-      </div>
-    </div>
-
-    <!-- Current watts bar chart -->
-    <div class="bar-chart" id="currentChart" style="display:none;">
-      <h3>Current Production — Live Watts</h3>
-      <div id="currentBars"></div>
-      <div style="display:flex; align-items:center; gap:0.5rem; margin-top:0.75rem; font-size:0.78rem; color:var(--text-muted);">
-        <div style="width:12px; height:2px; background:var(--accent);"></div>
-        Array average
-      </div>
-    </div>
-
-    <!-- Panel table -->
-    <div class="panel-table-wrap">
-      <table class="panel-table">
-        <thead>
-          <tr>
-            <th>Panel #</th>
-            <th>Serial</th>
-            <th>Current W</th>
-            <th>Max Ever W</th>
-            <th>vs Average</th>
-            <th>Status</th>
-          </tr>
-        </thead>
-        <tbody id="panelTableBody"></tbody>
-      </table>
-    </div>
-
-    <!-- Recommendations -->
-    <div class="recommendations" id="recommendations">
-      <h3>Recommendations</h3>
-      <div id="recList"></div>
-    </div>
-
-    <!-- Installer Summary -->
-    <div class="step" id="installerSummary" style="display:none;">
-      <div class="step-header">
-        <div class="step-number">!</div>
-        <div class="step-title">Summary for Your Installer</div>
-      </div>
-      <div style="font-size:0.85rem; color:var(--text-muted); margin-bottom:0.75rem;">
-        Copy this and send it to your solar installer or use it when filing a warranty claim.
-      </div>
-      <textarea id="installerText" readonly style="min-height:200px;"></textarea>
-      <button class="btn btn-secondary btn-sm" style="margin-top:0.75rem;" onclick="copyText('installerText')">
-        📋 Copy to Clipboard
-      </button>
-    </div>
-
-    <!-- Actions -->
-    <div class="report-actions">
-      <button class="btn btn-secondary" onclick="window.print()">🖨️ Print Report</button>
-      <button class="btn btn-secondary" onclick="downloadReport()">💾 Save as JSON</button>
-      <button class="btn btn-primary" onclick="startOver()">Run Another Check</button>
-    </div>
-
+    <div class="bar-chart" id="perfChart"><h3>Panel Performance — Max Reported Watts</h3><div id="perfBars"></div><div style="display:flex;align-items:center;gap:.5rem;margin-top:.75rem;font-size:.78rem;color:var(--text-muted)"><div style="width:12px;height:2px;background:var(--accent)"></div> Array average</div></div>
+    <div class="bar-chart" id="currentChart" style="display:none"><h3>Current Production — Live Watts</h3><div id="currentBars"></div><div style="display:flex;align-items:center;gap:.5rem;margin-top:.75rem;font-size:.78rem;color:var(--text-muted)"><div style="width:12px;height:2px;background:var(--accent)"></div> Array average</div></div>
+    <div class="panel-table-wrap"><table class="panel-table"><thead><tr><th>Panel #</th><th>Serial</th><th>Current W</th><th>Max Ever W</th><th>vs Average</th><th>Status</th></tr></thead><tbody id="panelTableBody"></tbody></table></div>
+    <div class="recommendations"><h3>Recommendations</h3><div id="recList"></div></div>
+    <div class="methodology"><h3>🔍 How This Report Works</h3><div id="methodologyContent"></div></div>
+    <div class="step" id="installerSummary" style="display:none"><div class="step-header"><div class="step-number">!</div><div class="step-title">Summary for Your Installer</div></div><div style="font-size:.85rem;color:var(--text-muted);margin-bottom:.75rem">Copy this and send it to your solar installer or use when filing a warranty claim.</div><textarea id="installerText" readonly style="min-height:200px"></textarea><button class="btn btn-secondary btn-sm" style="margin-top:.75rem" onclick="copyText('installerText')">📋 Copy to Clipboard</button></div>
+    <div style="text-align:center;margin:2rem 0"><p style="font-size:.9rem;color:var(--text-muted);margin-bottom:.75rem">Found this helpful? Support the project:</p><a href="https://buymeacoffee.com/MTNEARZ" target="_blank" class="bmc-link" style="font-size:.9rem;padding:.6rem 1.2rem">☕ Buy Me a Coffee</a></div>
+    <div class="report-actions"><button class="btn btn-secondary" onclick="window.print()">🖨️ Print</button><button class="btn btn-secondary" onclick="downloadReport()">💾 Save JSON</button><button class="btn btn-primary" onclick="startOver()">Run Another Check</button></div>
   </div>
 
-  <!-- Footer -->
-  <div class="footer">
-    <p>
-      Solar Checkup is a free, open-source tool.
-      <a href="https://github.com/mtnears/Solar-Checkup" target="_blank">View source on GitHub</a>
-      · No data is collected or transmitted.
-    </p>
-    <p style="margin-top:0.4rem;">
-      A companion tool from the <a href="https://github.com/mtnears/FranklinWH-Automation" target="_blank">FranklinWH-Automation</a> project.
-    </p>
-  </div>
-
+  <div class="footer"><p>Solar Checkup is free &amp; open source. <a href="https://github.com/mtnears/Solar-Checkup" target="_blank">View source on GitHub</a> · No data collected.</p><p style="margin-top:.4rem">A companion tool from <a href="https://github.com/mtnears/FranklinWH-Automation" target="_blank">FranklinWH-Automation</a>. <a href="https://buymeacoffee.com/MTNEARZ" target="_blank" style="color:var(--accent)">☕ Support this project</a></p></div>
 </div>
 
 <script>
-// ──────────────────────────────────────────────────────────
-// Solar Checkup — Enphase Panel Health Analyzer
-// 100% client-side. No data sent anywhere. View source ↑
-// ──────────────────────────────────────────────────────────
+var gatewayData=null,analysisResult=null;
 
-let gatewayData = null;
-let productionData = null;
-let analysisResult = null;
+// ── Panel Database ───────────────────────────────────────
+var PANEL_DB=[
+{m:"Hyundai HiN-T435NF(BK)",w:435,p:407,d1:2.0,da:0.40},
+{m:"Hyundai HiN-S420GF",w:420,p:393,d1:2.0,da:0.40},
+{m:"REC Alpha Pure-R 430",w:430,p:404,d1:2.0,da:0.25},
+{m:"REC Alpha Pure-R 410",w:410,p:385,d1:2.0,da:0.25},
+{m:"REC Alpha Pure 400AA",w:400,p:376,d1:2.0,da:0.25},
+{m:"REC TwinPeak 4 370",w:370,p:346,d1:2.0,da:0.25},
+{m:"LG NeON H 435",w:435,p:408,d1:2.0,da:0.33},
+{m:"LG NeON H 425",w:425,p:399,d1:2.0,da:0.33},
+{m:"LG NeON R 400",w:400,p:376,d1:2.0,da:0.33},
+{m:"LG NeON 2 370",w:370,p:346,d1:2.0,da:0.33},
+{m:"LG NeON 2 355",w:355,p:332,d1:2.0,da:0.33},
+{m:"LG LG355S2W-A5",w:355,p:332,d1:2.0,da:0.50},
+{m:"SunPower Maxeon 3 400",w:400,p:380,d1:2.0,da:0.25},
+{m:"SunPower Maxeon 6 440",w:440,p:413,d1:2.0,da:0.25},
+{m:"SunPower A-Series 420",w:420,p:394,d1:2.0,da:0.25},
+{m:"Panasonic EverVolt 410",w:410,p:384,d1:2.0,da:0.26},
+{m:"Panasonic EverVolt 380",w:380,p:356,d1:2.0,da:0.26},
+{m:"Panasonic HIT 340",w:340,p:318,d1:2.0,da:0.26},
+{m:"Canadian Solar CS6R-420H",w:420,p:394,d1:2.0,da:0.40},
+{m:"Canadian Solar HiDM 390",w:390,p:365,d1:2.0,da:0.45},
+{m:"Q CELLS Q.PEAK DUO 420",w:420,p:394,d1:2.0,da:0.40},
+{m:"Q CELLS Q.PEAK DUO 400",w:400,p:375,d1:2.0,da:0.40},
+{m:"Q CELLS Q.PEAK DUO 370",w:370,p:347,d1:2.0,da:0.40},
+{m:"Trina Vertex S+ 430",w:430,p:403,d1:2.0,da:0.40},
+{m:"Trina Vertex S 410",w:410,p:384,d1:2.0,da:0.45},
+{m:"Trina Vertex S 400",w:400,p:375,d1:2.0,da:0.45},
+{m:"JinkoSolar Tiger Neo 440",w:440,p:412,d1:2.0,da:0.40},
+{m:"JinkoSolar Tiger Neo 420",w:420,p:394,d1:2.0,da:0.40},
+{m:"JinkoSolar Tiger Pro 400",w:400,p:375,d1:2.0,da:0.40},
+{m:"Silfab SIL-420-BG",w:420,p:394,d1:2.0,da:0.40},
+{m:"Silfab SIL-400-BG",w:400,p:375,d1:2.0,da:0.40},
+{m:"LONGi Hi-MO 6 445",w:445,p:417,d1:2.0,da:0.40},
+{m:"LONGi Hi-MO 5 410",w:410,p:384,d1:2.0,da:0.45},
+{m:"Mission Solar MSE 380",w:380,p:356,d1:2.0,da:0.50},
+{m:"Aptos DNA-144 440",w:440,p:412,d1:2.0,da:0.40},
+{m:"Maxeon 5 AC 400",w:400,p:380,d1:2.0,da:0.25},
+{m:"Axitec AXIblackpremium 410",w:410,p:384,d1:2.0,da:0.50},
+];
 
-// ── UI Helpers ───────────────────────────────────────────
+var MICRO_LIMITS={IQ7:250,"IQ7+":290,IQ7A:349,IQ8:250,"IQ8+":290,IQ8M:310,IQ8H:384,IQ8A:349,IQ8HC:384};
 
-function toggleHelp(id) {
-  document.getElementById(id).classList.toggle('open');
-}
+// ── Helpers ──────────────────────────────────────────────
+function toggleHelp(id){document.getElementById(id).classList.toggle('open')}
+function showStatus(id,t,m){document.getElementById(id).innerHTML='<div class="status status-'+t+'">'+m+'</div>'}
+function clearStatus(id){document.getElementById(id).innerHTML=''}
+function copyText(tid){var ta=document.getElementById(tid);ta.select();ta.setSelectionRange(0,99999);navigator.clipboard.writeText(ta.value).catch(function(){document.execCommand('copy')});var b=event.target.closest('button'),o=b.innerHTML;b.innerHTML='✓ Copied!';setTimeout(function(){b.innerHTML=o},1500)}
 
-function showStatus(containerId, type, message) {
-  document.getElementById(containerId).innerHTML =
-    `<div class="status status-${type}">${message}</div>`;
-}
-
-function clearStatus(containerId) {
-  document.getElementById(containerId).innerHTML = '';
-}
-
-function copyText(textareaId) {
-  const ta = document.getElementById(textareaId);
-  ta.select();
-  ta.setSelectionRange(0, 99999);
-  navigator.clipboard.writeText(ta.value).catch(() => {
-    document.execCommand('copy');
+// ── Panel Lookup ─────────────────────────────────────────
+document.addEventListener('DOMContentLoaded',function(){
+  var dl=document.getElementById('panelSuggestions');
+  PANEL_DB.forEach(function(p){var o=document.createElement('option');o.value=p.m;dl.appendChild(o)});
+  document.getElementById('panelModel').addEventListener('input',function(){
+    var v=this.value.trim().toLowerCase(),box=document.getElementById('specMatchBox');
+    var match=PANEL_DB.find(function(p){return p.m.toLowerCase()===v});
+    if(match){
+      box.innerHTML='<div class="spec-match"><div class="spec-match-title">✅ Found: '+match.m+'</div><div class="spec-match-grid"><span class="spec-label">DC Rating:</span><span class="spec-val">'+match.w+'W</span><span class="spec-label">PTC Rating:</span><span class="spec-val">'+match.p+'W</span><span class="spec-label">Year 1 Degradation:</span><span class="spec-val">'+match.d1+'%</span><span class="spec-label">Annual Degradation:</span><span class="spec-val">'+match.da+'%</span></div><button class="btn btn-sm btn-primary" style="margin-top:.75rem" onclick="applySpec()">Use these specs</button></div>';
+    } else box.innerHTML='';
   });
-  const btn = event.target.closest('button');
-  const orig = btn.innerHTML;
-  btn.innerHTML = '✓ Copied!';
-  setTimeout(() => btn.innerHTML = orig, 1500);
+});
+function applySpec(){
+  var v=document.getElementById('panelModel').value.trim().toLowerCase();
+  var m=PANEL_DB.find(function(p){return p.m.toLowerCase()===v});
+  if(!m)return;
+  document.getElementById('panelWatts').value=m.w;
+  document.getElementById('panelPtcWatts').value=m.p;
+  document.getElementById('degradYear1').value=m.d1;
+  document.getElementById('degradAnnual').value=m.da;
+  document.getElementById('specMatchBox').innerHTML='<div class="status status-success" style="margin-top:.5rem">✓ Applied: '+m.m+' ('+m.w+'W DC / '+m.p+'W PTC / '+m.d1+'% yr1 / '+m.da+'%/yr)</div>';
 }
 
-// ── Step 1: Load Pasted Data ─────────────────────────────
-
-function loadPastedData() {
-  const raw = document.getElementById('pasteData').value.trim();
-
-  if (!raw) {
-    showStatus('loadStatus', 'error', 'Please paste your inverter data from the gateway.');
-    return;
-  }
-
-  let parsed;
-  try {
-    parsed = JSON.parse(raw);
-  } catch (err) {
-    showStatus('loadStatus', 'error',
-      'Could not parse the data as JSON. Make sure you copied the entire page. ' +
-      '<span style="font-size:0.78rem; display:block; margin-top:0.3rem; color:var(--text-dim);">Error: ' + err.message + '</span>');
-    return;
-  }
-
-  if (!Array.isArray(parsed)) {
-    showStatus('loadStatus', 'error',
-      'Expected a JSON array (starts with <code>[</code>). This doesn\'t look like inverter data.');
-    return;
-  }
-
-  if (parsed.length === 0) {
-    showStatus('loadStatus', 'error', 'The data array is empty — no inverters found.');
-    return;
-  }
-
-  const first = parsed[0];
-  if (!first.serialNumber && !first.serial_num) {
-    showStatus('loadStatus', 'error',
-      'This doesn\'t look like Enphase inverter data. Expected fields like "serialNumber" and "lastReportWatts".');
-    return;
-  }
-
-  gatewayData = parsed;
-
-  showStatus('loadStatus', 'success', '✓ Loaded data for ' + gatewayData.length + ' microinverters.');
-
-  document.getElementById('step1').classList.remove('active');
-  document.getElementById('step1').classList.add('complete');
-
-  const step2 = document.getElementById('step2');
-  step2.style.display = 'block';
-  step2.classList.add('active');
-
-  document.getElementById('detectedInfo').textContent =
-    'Detected ' + gatewayData.length + ' panels';
-
-  const now = new Date();
-  const defaultDate = new Date(now.getFullYear() - 1, now.getMonth(), 1);
-  document.getElementById('installDate').value = defaultDate.toISOString().split('T')[0];
-
-  step2.scrollIntoView({ behavior: 'smooth', block: 'start' });
+// ── Step 1 ───────────────────────────────────────────────
+function loadPastedData(){
+  var raw=document.getElementById('pasteData').value.trim();
+  if(!raw){showStatus('loadStatus','error','Please paste your inverter data.');return}
+  var parsed;
+  try{parsed=JSON.parse(raw)}catch(e){showStatus('loadStatus','error','Could not parse JSON. Copy the entire page.<br><span style="font-size:.78rem;color:var(--text-dim)">'+e.message+'</span>');return}
+  if(!Array.isArray(parsed)){showStatus('loadStatus','error','Expected a JSON array (starts with [).');return}
+  if(!parsed.length){showStatus('loadStatus','error','Empty array.');return}
+  if(!parsed[0].serialNumber&&!parsed[0].serial_num){showStatus('loadStatus','error','Doesn\'t look like Enphase data.');return}
+  gatewayData=parsed;
+  showStatus('loadStatus','success','✓ Loaded '+gatewayData.length+' microinverters.');
+  document.getElementById('step1').classList.remove('active');document.getElementById('step1').classList.add('complete');
+  var s2=document.getElementById('step2');s2.style.display='block';s2.classList.add('active');
+  document.getElementById('detectedInfo').textContent='Detected '+gatewayData.length+' panels';
+  var now=new Date();document.getElementById('installDate').value=new Date(now.getFullYear()-1,now.getMonth(),1).toISOString().split('T')[0];
+  s2.scrollIntoView({behavior:'smooth',block:'start'});
 }
 
-// ── Step 2: Run Analysis ─────────────────────────────────
+// ── Step 2: Analysis ─────────────────────────────────────
+function runAnalysis(){
+  if(!gatewayData){showStatus('analyzeStatus','error','No data.');return}
+  var pw=parseFloat(document.getElementById('panelWatts').value)||0;
+  var pp=parseFloat(document.getElementById('panelPtcWatts').value)||0;
+  var pm=document.getElementById('panelModel').value.trim();
+  var id=document.getElementById('installDate').value;
+  var tilt=parseFloat(document.getElementById('arrayTilt').value)||null;
+  var d1=parseFloat(document.getElementById('degradYear1').value);if(isNaN(d1))d1=2.0;
+  var da=parseFloat(document.getElementById('degradAnnual').value);if(isNaN(da))da=0.5;
+  if(!pp&&pw>0)pp=Math.round(pw*0.88);
 
-function runAnalysis() {
-  if (!gatewayData) {
-    showStatus('analyzeStatus', 'error', 'No data loaded. Go back to Step 1.');
-    return;
+  var invs={};
+  gatewayData.forEach(function(inv,i){var s=String(inv.serialNumber||inv.serial_num);invs[s]={serial:s,index:i+1,cur:inv.lastReportWatts||0,max:inv.maxReportWatts||0,ts:inv.lastReportDate||0}});
+
+  var maxEvers=Object.values(invs).map(function(i){return i.max}).filter(function(w){return w>0});
+  var maxAvg=maxEvers.length?maxEvers.reduce(function(a,b){return a+b},0)/maxEvers.length:0;
+  var maxMax=Math.max.apply(null,maxEvers.concat([0]));
+  var maxMin=maxEvers.length?Math.min.apply(null,maxEvers):0;
+  var curWatts=Object.values(invs).map(function(i){return i.cur}).filter(function(w){return w>0});
+  var curAvg=curWatts.length>=4?curWatts.reduce(function(a,b){return a+b},0)/curWatts.length:0;
+  var hasLive=curWatts.length>=4;
+
+  // Clipping detection
+  var clip=false,clipCeil=0,clipNote='',clipMicro='';
+  if(pw>0&&maxAvg>0&&maxAvg/pw<0.75){
+    clip=true;clipCeil=maxMax;
+    for(var mn in MICRO_LIMITS){if(Math.abs(maxMax-MICRO_LIMITS[mn])<25){clipMicro=mn;break}}
+    clipNote=clipMicro?'Your panels are rated '+pw+'W DC but your microinverters (likely Enphase '+clipMicro+', max ~'+MICRO_LIMITS[clipMicro]+'W AC) limit output. This is normal and expected — the inverter converts DC to AC and has a lower ceiling. Health analysis uses peer comparison instead of the DC panel rating.':'Your panels are rated '+pw+'W DC but peak output is '+maxMax+'W, indicating microinverter clipping. This is normal. Health analysis uses peer comparison.';
   }
 
-  const panelWatts = parseFloat(document.getElementById('panelWatts').value) || 0;
-  const panelModel = document.getElementById('panelModel').value.trim();
-  const installDate = document.getElementById('installDate').value;
-  const arrayTilt = parseFloat(document.getElementById('arrayTilt').value) || null;
+  // Degradation
+  var age=0,df=1.0;
+  if(id){age=(Date.now()-new Date(id).getTime())/(365.25*864e5);if(age<=0)df=1;else if(age<=1)df=1-(d1/100)*age;else df=(1-d1/100)*(1-(da/100)*(age-1))}
+  age=Math.round(age*10)/10;
 
-  const inverters = {};
-  gatewayData.forEach((inv, idx) => {
-    const serial = String(inv.serialNumber || inv.serial_num);
-    inverters[serial] = {
-      serial,
-      index: idx + 1,
-      currentWatts: inv.lastReportWatts || 0,
-      maxEverWatts: inv.maxReportWatts || 0,
-      lastReport: inv.lastReportDate || 0,
-    };
-  });
+  // Thresholds
+  function classify(r){return r>=1.05?'excellent':r>=0.95?'good':r>=0.85?'fair':r>=0.75?'watch':'alert'}
 
-  // Peer comparison: max-ever
-  const maxEvers = Object.values(inverters).map(i => i.maxEverWatts).filter(w => w > 0);
-  const maxAvg = maxEvers.length > 0 ? maxEvers.reduce((a, b) => a + b, 0) / maxEvers.length : 0;
-  const maxMax = Math.max(...maxEvers, 0);
-  const maxMin = Math.min(...(maxEvers.length ? maxEvers : [0]));
+  var panels=[];
+  for(var s in invs){
+    var inv=invs[s];
+    var mr=maxAvg>0?inv.max/maxAvg:1;
+    var cr=(hasLive&&inv.cur>0&&curAvg>0)?inv.cur/curAvg:null;
+    var pr=cr!==null?cr:mr;
 
-  // Peer comparison: current
-  const currentWatts = Object.values(inverters).map(i => i.currentWatts).filter(w => w > 0);
-  const currentAvg = currentWatts.length >= 4
-    ? currentWatts.reduce((a, b) => a + b, 0) / currentWatts.length : 0;
-  const hasLiveData = currentWatts.length >= 4;
-
-  // Health thresholds
-  const thresholds = { excellent: 1.05, good: 0.95, fair: 0.85, watch: 0.75 };
-  function classify(ratio) {
-    if (ratio >= thresholds.excellent) return 'excellent';
-    if (ratio >= thresholds.good) return 'good';
-    if (ratio >= thresholds.fair) return 'fair';
-    if (ratio >= thresholds.watch) return 'watch';
-    return 'alert';
-  }
-
-  const panels = [];
-  for (const [serial, inv] of Object.entries(inverters)) {
-    const maxRatio = maxAvg > 0 ? inv.maxEverWatts / maxAvg : 1;
-    const currentRatio = (hasLiveData && inv.currentWatts > 0 && currentAvg > 0)
-      ? inv.currentWatts / currentAvg : null;
-
-    const primaryRatio = currentRatio !== null ? currentRatio : maxRatio;
-    const status = classify(primaryRatio);
-
-    let degradationInfo = null;
-    if (panelWatts > 0 && installDate) {
-      const ageYears = (Date.now() - new Date(installDate).getTime()) / (365.25 * 86400000);
-      const year1Deg = 0.02;
-      const annualDeg = 0.005;
-      let factor;
-      if (ageYears <= 0) factor = 1.0;
-      else if (ageYears <= 1) factor = 1.0 - year1Deg * ageYears;
-      else factor = (1 - year1Deg) * (1 - annualDeg * (ageYears - 1));
-
-      const ptcWatts = panelWatts * 0.88;
-      const expectedPtc = ptcWatts * factor;
-
-      degradationInfo = {
-        ageYears: Math.round(ageYears * 10) / 10,
-        expectedFactor: Math.round(factor * 1000) / 10,
-        expectedPtcW: Math.round(expectedPtc),
-        actualVsExpectedPtc: expectedPtc > 0
-          ? Math.round((inv.maxEverWatts / expectedPtc) * 1000) / 10 : null,
-      };
+    var deg=null;
+    if(pw>0&&id){
+      // For absolute comparison: use PTC adjusted for degradation, but only if NOT clipping
+      var expW=clip?clipCeil*df:(pp||pw*0.88)*df;
+      deg={age:age,factor:Math.round(df*1000)/10,expW:Math.round(expW),ratio:expW>0?Math.round(inv.max/expW*1000)/10:null,clip:clip};
     }
-
-    panels.push({
-      serial,
-      index: inv.index,
-      currentWatts: inv.currentWatts,
-      maxEverWatts: inv.maxEverWatts,
-      lastReport: inv.lastReport,
-      maxRatio: Math.round(maxRatio * 1000) / 10,
-      currentRatio: currentRatio !== null ? Math.round(currentRatio * 1000) / 10 : null,
-      primaryRatio: Math.round(primaryRatio * 1000) / 10,
-      status,
-      degradation: degradationInfo,
-    });
+    panels.push({serial:s,index:inv.index,cur:inv.cur,max:inv.max,ts:inv.ts,mr:Math.round(mr*1000)/10,cr:cr!==null?Math.round(cr*1000)/10:null,pr:Math.round(pr*1000)/10,status:classify(pr),deg:deg});
   }
+  panels.sort(function(a,b){return a.mr-b.mr});
 
-  panels.sort((a, b) => a.maxRatio - b.maxRatio);
+  var hc={excellent:0,good:0,fair:0,watch:0,alert:0};
+  panels.forEach(function(p){hc[p.status]++});
+  var spread=maxAvg>0?Math.round((maxMax-maxMin)/maxAvg*1000)/10:0;
 
-  const healthCounts = { excellent: 0, good: 0, fair: 0, watch: 0, alert: 0 };
-  panels.forEach(p => healthCounts[p.status]++);
-
-  const spreadPct = maxAvg > 0 ? Math.round(((maxMax - maxMin) / maxAvg) * 1000) / 10 : 0;
-
-  analysisResult = {
-    timestamp: new Date().toISOString(),
-    system: {
-      panelCount: panels.length,
-      panelModel: panelModel || 'Not specified',
-      panelWatts: panelWatts || 'Not specified',
-      installDate: installDate || 'Not specified',
-      tilt: arrayTilt,
-    },
-    arrayStats: {
-      maxEverAvg: Math.round(maxAvg),
-      maxEverMax: maxMax,
-      maxEverMin: maxMin,
-      spreadPct,
-      currentAvg: Math.round(currentAvg),
-      hasLiveData,
-    },
-    healthCounts,
-    underperformers: panels.filter(p => p.status === 'watch' || p.status === 'alert').length,
-    panels,
-  };
+  analysisResult={ts:new Date().toISOString(),sys:{n:panels.length,model:pm||'Not specified',watts:pw||'Not specified',ptc:pp||null,date:id||'Not specified',tilt:tilt,d1:d1,da:da},stats:{maxAvg:Math.round(maxAvg),maxMax:maxMax,maxMin:maxMin,spread:spread,curAvg:Math.round(curAvg),live:hasLive},clip:{on:clip,ceil:clipCeil,note:clipNote,micro:clipMicro},deg:{age:age,factor:Math.round(df*1000)/10,basis:clip?'peer comparison (clipped)':pp?'PTC rating':'estimated PTC'},hc:hc,flagged:panels.filter(function(p){return p.status==='watch'||p.status==='alert'}).length,panels:panels};
 
   renderReport();
 }
 
-// ── Report Rendering ─────────────────────────────────────
+// ── Render ───────────────────────────────────────────────
+function renderReport(){
+  var r=analysisResult;
+  document.getElementById('setup').style.display='none';
+  document.getElementById('report').classList.add('visible');
+  var ts=new Date(r.ts);
+  document.getElementById('reportTimestamp').textContent='Generated '+ts.toLocaleDateString()+' at '+ts.toLocaleTimeString();
+  var si=r.sys.n+' panels';if(r.sys.model!=='Not specified')si+=' — '+r.sys.model;if(r.sys.watts!=='Not specified')si+=' ('+r.sys.watts+'W)';
+  document.getElementById('reportSystemInfo').textContent=si;
 
-function renderReport() {
-  const r = analysisResult;
+  var os=document.getElementById('overallStatus');
+  if(r.hc.alert>0){os.className='overall-status overall-alert';os.textContent='⚠️ '+r.hc.alert+' panel'+(r.hc.alert>1?'s':'')+' need attention — possible failing hardware'}
+  else if(r.hc.watch>0){os.className='overall-status overall-warning';os.textContent='🔍 '+r.hc.watch+' panel'+(r.hc.watch>1?'s':'')+' underperforming — worth monitoring'}
+  else if(r.hc.fair>0){os.className='overall-status overall-warning';os.textContent='👀 '+r.hc.fair+' panel'+(r.hc.fair>1?'s show':' shows')+' slight underperformance — likely OK'}
+  else{os.className='overall-status overall-healthy';os.textContent='✅ All panels performing within normal range'}
 
-  document.getElementById('setup').style.display = 'none';
-  const report = document.getElementById('report');
-  report.classList.add('visible');
+  var g=document.getElementById('summaryGrid');g.innerHTML='';
+  [{v:r.sys.n,l:'Panels'},{v:r.stats.maxAvg+'W',l:'Avg Peak'},{v:r.stats.spread+'%',l:'Spread'},{v:r.hc.excellent+r.hc.good,l:'Healthy'},{v:r.hc.fair,l:'Fair'},{v:r.hc.watch+r.hc.alert,l:'Flagged'}].forEach(function(c){g.innerHTML+='<div class="summary-card"><div class="value">'+c.v+'</div><div class="label">'+c.l+'</div></div>'});
 
-  const ts = new Date(r.timestamp);
-  document.getElementById('reportTimestamp').textContent =
-    'Generated ' + ts.toLocaleDateString() + ' at ' + ts.toLocaleTimeString();
+  renderBars('perfBars',r.panels,'max',r.stats.maxAvg,r.stats.maxMax);
+  if(r.stats.live){document.getElementById('currentChart').style.display='block';renderBars('currentBars',r.panels,'cur',r.stats.curAvg,Math.max.apply(null,r.panels.map(function(p){return p.cur})))}
 
-  let sysInfo = r.system.panelCount + ' panels';
-  if (r.system.panelModel !== 'Not specified') sysInfo += ' — ' + r.system.panelModel;
-  if (r.system.panelWatts !== 'Not specified') sysInfo += ' (' + r.system.panelWatts + 'W)';
-  document.getElementById('reportSystemInfo').textContent = sysInfo;
+  var tb=document.getElementById('panelTableBody');tb.innerHTML='';
+  r.panels.slice().sort(function(a,b){return a.index-b.index}).forEach(function(p){tb.innerHTML+='<tr><td>#'+p.index+'</td><td>'+p.serial.slice(-6)+'</td><td>'+(p.cur>0?p.cur:'—')+'</td><td>'+p.max+'</td><td>'+p.mr+'%</td><td><span class="badge badge-'+p.status+'">'+p.status+'</span></td></tr>'});
 
-  // Overall status
-  const osEl = document.getElementById('overallStatus');
-  if (r.healthCounts.alert > 0) {
-    osEl.className = 'overall-status overall-alert';
-    osEl.textContent = '\u26a0\ufe0f ' + r.healthCounts.alert + ' panel' + (r.healthCounts.alert > 1 ? 's' : '') + ' need attention \u2014 possible failing hardware';
-  } else if (r.healthCounts.watch > 0) {
-    osEl.className = 'overall-status overall-warning';
-    osEl.textContent = '\ud83d\udd0d ' + r.healthCounts.watch + ' panel' + (r.healthCounts.watch > 1 ? 's' : '') + ' underperforming \u2014 worth monitoring';
-  } else if (r.healthCounts.fair > 0) {
-    osEl.className = 'overall-status overall-warning';
-    osEl.textContent = '\ud83d\udc40 ' + r.healthCounts.fair + ' panel' + (r.healthCounts.fair > 1 ? 's show' : ' shows') + ' slight underperformance \u2014 likely OK';
-  } else {
-    osEl.className = 'overall-status overall-healthy';
-    osEl.textContent = '\u2705 All panels performing within normal range';
-  }
-
-  // Summary cards
-  const gridEl = document.getElementById('summaryGrid');
-  gridEl.innerHTML = '';
-  [
-    { value: r.system.panelCount, label: 'Panels' },
-    { value: r.arrayStats.maxEverAvg + 'W', label: 'Avg Peak' },
-    { value: r.arrayStats.spreadPct + '%', label: 'Spread' },
-    { value: r.healthCounts.excellent + r.healthCounts.good, label: 'Healthy' },
-    { value: r.healthCounts.fair, label: 'Fair' },
-    { value: r.healthCounts.watch + r.healthCounts.alert, label: 'Flagged' },
-  ].forEach(c => {
-    gridEl.innerHTML += '<div class="summary-card"><div class="value">' + c.value + '</div><div class="label">' + c.label + '</div></div>';
-  });
-
-  // Bar charts
-  renderBarChart('perfBars', r.panels, 'maxEverWatts', r.arrayStats.maxEverAvg, r.arrayStats.maxEverMax);
-
-  if (r.arrayStats.hasLiveData) {
-    document.getElementById('currentChart').style.display = 'block';
-    const currentMax = Math.max(...r.panels.map(p => p.currentWatts));
-    renderBarChart('currentBars', r.panels, 'currentWatts', r.arrayStats.currentAvg, currentMax);
-  }
-
-  // Panel table
-  const tbody = document.getElementById('panelTableBody');
-  tbody.innerHTML = '';
-  [...r.panels].sort((a, b) => a.index - b.index).forEach(p => {
-    tbody.innerHTML += '<tr>' +
-      '<td>#' + p.index + '</td>' +
-      '<td>' + p.serial.slice(-6) + '</td>' +
-      '<td>' + (p.currentWatts > 0 ? p.currentWatts : '\u2014') + '</td>' +
-      '<td>' + p.maxEverWatts + '</td>' +
-      '<td>' + p.maxRatio + '%</td>' +
-      '<td><span class="badge badge-' + p.status + '">' + p.status + '</span></td>' +
-      '</tr>';
-  });
-
-  renderRecommendations();
-
-  if (r.healthCounts.watch > 0 || r.healthCounts.alert > 0) {
-    renderInstallerSummary();
-  }
-
-  window.scrollTo({ top: 0, behavior: 'smooth' });
+  renderRecs();renderMethodology();
+  if(r.hc.watch>0||r.hc.alert>0)renderInstaller();
+  window.scrollTo({top:0,behavior:'smooth'});
 }
 
-function renderBarChart(containerId, panels, field, avg, maxVal) {
-  const container = document.getElementById(containerId);
-  container.innerHTML = '';
-  const sorted = [...panels].sort((a, b) => b[field] - a[field]);
-  const chartMax = maxVal * 1.1;
-
-  sorted.forEach(p => {
-    const val = p[field];
-    const pct = chartMax > 0 ? (val / chartMax * 100) : 0;
-    const avgPct = chartMax > 0 ? (avg / chartMax * 100) : 0;
-
-    let color;
-    if (p.status === 'excellent') color = 'var(--green)';
-    else if (p.status === 'good') color = 'var(--blue)';
-    else if (p.status === 'fair') color = 'var(--yellow)';
-    else if (p.status === 'watch') color = 'var(--orange)';
-    else color = 'var(--red)';
-
-    container.innerHTML +=
-      '<div class="bar-row">' +
-        '<div class="bar-label">#' + p.index + ' \u2026' + p.serial.slice(-4) + '</div>' +
-        '<div class="bar-track">' +
-          '<div class="bar-fill" style="width:' + pct + '%; background:' + color + ';">' +
-            (pct > 15 ? '<span class="bar-value">' + val + 'W</span>' : '') +
-          '</div>' +
-          (pct <= 15 ? '<span class="bar-value-outside" style="left:' + pct + '%">' + val + 'W</span>' : '') +
-          '<div class="bar-avg-line" style="left:' + avgPct + '%;"></div>' +
-        '</div>' +
-      '</div>';
+function renderBars(cid,panels,field,avg,maxVal){
+  var c=document.getElementById(cid);c.innerHTML='';
+  var sorted=panels.slice().sort(function(a,b){return b[field]-a[field]});
+  var cm=maxVal*1.1;
+  sorted.forEach(function(p){
+    var v=p[field],pct=cm>0?v/cm*100:0,ap=cm>0?avg/cm*100:0;
+    var col=p.status==='excellent'?'var(--green)':p.status==='good'?'var(--blue)':p.status==='fair'?'var(--yellow)':p.status==='watch'?'var(--orange)':'var(--red)';
+    c.innerHTML+='<div class="bar-row"><div class="bar-label">#'+p.index+' …'+p.serial.slice(-4)+'</div><div class="bar-track"><div class="bar-fill" style="width:'+pct+'%;background:'+col+'">'+(pct>15?'<span class="bar-value">'+v+'W</span>':'')+'</div>'+(pct<=15?'<span class="bar-value-outside" style="left:'+pct+'%">'+v+'W</span>':'')+'<div class="bar-avg-line" style="left:'+ap+'%"></div></div></div>';
   });
 }
 
-function renderRecommendations() {
-  const r = analysisResult;
-  const recEl = document.getElementById('recList');
-  recEl.innerHTML = '';
-  const recs = [];
+function renderRecs(){
+  var r=analysisResult,el=document.getElementById('recList');el.innerHTML='';var recs=[];
+  var h=new Date().getHours();
+  if(h<9||h>16)recs.push({i:'🕐',t:'This scan was run outside peak solar hours. For best live comparison, run between 10 AM and 2 PM on a clear day.'});
+  if(r.clip.on)recs.push({i:'⚡',t:r.clip.note});
+  if(r.stats.spread>15)recs.push({i:'📊',t:'Spread of '+r.stats.spread+'% between best and worst peak is high for same-model panels. Could indicate hardware issues.'});
+  else if(r.stats.spread>8)recs.push({i:'📊',t:'Spread of '+r.stats.spread+'% is moderate. Some variation is normal from microinverter tolerances and minor shading.'});
+  else recs.push({i:'✅',t:'Spread of '+r.stats.spread+'% is tight — well-matched array.'});
 
-  const hour = new Date().getHours();
-  if (hour < 9 || hour > 16) {
-    recs.push({ icon: '\ud83d\udd50', text: 'This scan was run outside peak solar hours. For the most accurate live comparison, run another check between 10 AM and 2 PM on a clear day.' });
+  var alerts=r.panels.filter(function(p){return p.status==='alert'});
+  if(alerts.length)recs.push({i:'🔴',t:'Panel'+(alerts.length>1?'s ':' ')+alerts.map(function(p){return'#'+p.index}).join(', ')+(alerts.length>1?' are':' is')+' significantly below average. Typically indicates failing microinverter or damaged panel. Contact your installer.'});
+  var watches=r.panels.filter(function(p){return p.status==='watch'});
+  if(watches.length)recs.push({i:'🟡',t:'Panel'+(watches.length>1?'s ':' ')+watches.map(function(p){return'#'+p.index}).join(', ')+(watches.length>1?' are':' is')+' below expected. Run again another day to confirm.'});
+
+  // Degradation — only show if NOT clipping or if comparing against adjusted ceiling
+  var wd=r.panels.filter(function(p){return p.deg&&p.deg.ratio!==null&&!p.deg.clip});
+  if(wd.length){
+    var below=wd.filter(function(p){return p.deg.ratio<90});
+    if(below.length)recs.push({i:'📉',t:below.length+' panel'+(below.length>1?'s':'')+' below expected for '+wd[0].deg.age+'-year-old panels (expected ~'+wd[0].deg.expW+'W PTC-adjusted).'});
+    else recs.push({i:'✅',t:'All panels within expected range for age ('+wd[0].deg.age+' yrs, ~'+wd[0].deg.factor+'% of original).'});
   }
-
-  if (r.arrayStats.spreadPct > 15) {
-    recs.push({ icon: '\ud83d\udcca', text: 'The spread between your best and worst panel peak is ' + r.arrayStats.spreadPct + '% \u2014 this is higher than expected for same-model panels on the same roof face. Could indicate a hardware issue with the lower-performing panels.' });
-  } else if (r.arrayStats.spreadPct > 8) {
-    recs.push({ icon: '\ud83d\udcca', text: 'Panel spread of ' + r.arrayStats.spreadPct + '% is moderate. Some variation is normal due to microinverter tolerances and minor shading differences.' });
-  } else {
-    recs.push({ icon: '\u2705', text: 'Panel spread of ' + r.arrayStats.spreadPct + '% is tight \u2014 your array is well-matched.' });
-  }
-
-  const alerts = r.panels.filter(p => p.status === 'alert');
-  if (alerts.length > 0) {
-    const serials = alerts.map(p => '#' + p.index + ' (\u2026' + p.serial.slice(-6) + ')').join(', ');
-    recs.push({ icon: '\ud83d\udd34', text: 'Panel' + (alerts.length > 1 ? 's ' : ' ') + serials + (alerts.length > 1 ? ' are' : ' is') + ' producing significantly below array average. This typically indicates a failing microinverter or damaged panel. Contact your installer for inspection.' });
-  }
-
-  const watches = r.panels.filter(p => p.status === 'watch');
-  if (watches.length > 0) {
-    const serials = watches.map(p => '#' + p.index + ' (\u2026' + p.serial.slice(-6) + ')').join(', ');
-    recs.push({ icon: '\ud83d\udfe1', text: 'Panel' + (watches.length > 1 ? 's ' : ' ') + serials + (watches.length > 1 ? ' are' : ' is') + ' below expected performance. Run this check again on another day to confirm. If consistent, these may need inspection.' });
-  }
-
-  const withDeg = r.panels.filter(p => p.degradation && p.degradation.actualVsExpectedPtc !== null);
-  if (withDeg.length > 0) {
-    const belowExpected = withDeg.filter(p => p.degradation.actualVsExpectedPtc < 90);
-    if (belowExpected.length > 0) {
-      recs.push({ icon: '\ud83d\udcc9', text: belowExpected.length + ' panel' + (belowExpected.length > 1 ? 's are' : ' is') + ' producing below expected output for ' + withDeg[0].degradation.ageYears + '-year-old panels. Expected peak ~' + withDeg[0].degradation.expectedPtcW + 'W (PTC-adjusted with degradation), but some panels peak well below this.' });
-    } else {
-      recs.push({ icon: '\u2705', text: 'All panels producing within expected range for their age (' + withDeg[0].degradation.ageYears + ' years, ~' + withDeg[0].degradation.expectedFactor + '% of original capacity).' });
-    }
-  }
-
-  if (r.system.panelWatts === 'Not specified') {
-    recs.push({ icon: '\ud83d\udca1', text: 'Tip: Enter your panel rated wattage in Step 2 to get degradation analysis comparing actual output against manufacturer specifications.' });
-  }
-
-  if (alerts.length === 0 && watches.length === 0 && r.arrayStats.spreadPct <= 8) {
-    recs.push({ icon: '\ud83c\udf89', text: 'Your array looks healthy! All panels are performing consistently. Consider running this check every few months to catch issues early.' });
-  }
-
-  recs.forEach(rec => {
-    recEl.innerHTML += '<div class="rec-item"><span class="rec-icon">' + rec.icon + '</span><span>' + rec.text + '</span></div>';
-  });
+  if(r.sys.watts==='Not specified')recs.push({i:'💡',t:'Enter your panel wattage in Step 2 for degradation analysis against manufacturer specs.'});
+  if(!alerts.length&&!watches.length&&r.stats.spread<=8)recs.push({i:'🎉',t:'Array looks healthy! All panels consistent. Run this check every few months.'});
+  recs.forEach(function(r){el.innerHTML+='<div class="rec-item"><span class="rec-icon">'+r.i+'</span><span>'+r.t+'</span></div>'});
 }
 
-function renderInstallerSummary() {
-  const r = analysisResult;
-  document.getElementById('installerSummary').style.display = 'block';
-
-  const flagged = r.panels.filter(p => p.status === 'watch' || p.status === 'alert');
-  const sep = '\u2500'.repeat(50);
-
-  let text = 'SOLAR PANEL HEALTH CHECK REPORT\n';
-  text += 'Generated: ' + new Date(r.timestamp).toLocaleString() + '\n';
-  text += sep + '\n\n';
-  text += 'System: ' + r.system.panelCount + ' panels';
-  if (r.system.panelModel !== 'Not specified') text += ' \u2014 ' + r.system.panelModel;
-  if (r.system.panelWatts !== 'Not specified') text += ' (' + r.system.panelWatts + 'W)';
-  text += '\n';
-  if (r.system.installDate !== 'Not specified') text += 'Installed: ' + r.system.installDate + '\n';
-  text += 'Array Average Peak: ' + r.arrayStats.maxEverAvg + 'W\n';
-  text += 'Panel Spread: ' + r.arrayStats.spreadPct + '%\n\n';
-  text += 'FLAGGED PANELS:\n' + sep + '\n';
-
-  flagged.forEach(p => {
-    text += '\n  Panel #' + p.index + '\n';
-    text += '  Serial: ' + p.serial + '\n';
-    text += '  Status: ' + p.status.toUpperCase() + '\n';
-    text += '  Max Reported: ' + p.maxEverWatts + 'W (array avg: ' + r.arrayStats.maxEverAvg + 'W)\n';
-    text += '  Performance: ' + p.maxRatio + '% of array average\n';
-    if (p.currentWatts > 0) text += '  Current Output: ' + p.currentWatts + 'W\n';
-  });
-
-  text += '\n' + sep + '\n';
-  text += 'This report was generated by Solar Checkup\n';
-  text += '(https://mtnears.github.io/Solar-Checkup/)\n';
-  text += 'using per-panel data from the local Enphase IQ Gateway.\n';
-  text += 'The flagged panels are significantly below their peers\n';
-  text += 'on the same array, suggesting hardware inspection\n';
-  text += 'is warranted.\n';
-
-  document.getElementById('installerText').value = text;
+function renderMethodology(){
+  var r=analysisResult,el=document.getElementById('methodologyContent');
+  var html='<h4>Peer Comparison (Primary Method)</h4>';
+  html+='<p>Each panel is compared against the array average. Since all panels share the same roof, orientation, and weather, differences between panels indicate hardware issues rather than environmental factors.</p>';
+  html+='<table class="meth-table"><tr><td>≥105%</td><td><span class="badge badge-excellent">excellent</span> — Above average, performing well</td></tr><tr><td>95–105%</td><td><span class="badge badge-good">good</span> — Within normal range</td></tr><tr><td>85–95%</td><td><span class="badge badge-fair">fair</span> — Slightly below average, minor variation</td></tr><tr><td>75–85%</td><td><span class="badge badge-watch">watch</span> — Underperforming, re-check recommended</td></tr><tr><td>&lt;75%</td><td><span class="badge badge-alert">alert</span> — Significant underperformance, inspection needed</td></tr></table>';
+  html+='<h4>What "Max Reported Watts" Means</h4>';
+  html+='<p>This is the highest output your Enphase gateway has ever recorded for each panel. It represents peak performance under the best conditions the panel has experienced. We compare these peaks across panels to find outliers.</p>';
+  html+='<h4>Spread</h4>';
+  html+='<p>The difference between the highest and lowest panel peaks, as a percentage of the average. Under 8% is excellent, 8–15% is normal, over 15% suggests possible hardware issues.</p>';
+  if(r.clip.on){
+    html+='<h4>Microinverter Clipping</h4>';
+    html+='<p>Your panels\' DC rating ('+r.sys.watts+'W) exceeds the microinverter\'s AC output limit'+(r.clip.micro?' (~'+MICRO_LIMITS[r.clip.micro]+'W for '+r.clip.micro+')':'')+'. This is a normal and intentional design choice — oversizing panels relative to inverters improves production during non-peak hours. The health analysis compares panels against each other (peer comparison) rather than against the DC rating, since no panel can exceed the inverter limit.</p>';
+  }
+  if(r.sys.watts!=='Not specified'&&!r.clip.on){
+    html+='<h4>Degradation Analysis</h4>';
+    html+='<p>Panels degrade over time. Your configured rates: '+r.sys.d1+'% year 1, then '+r.sys.da+'%/year. At '+r.deg.age+' years, expected capacity is ~'+r.deg.factor+'% of original. We compare actual peaks against the PTC-adjusted rating with degradation applied.</p>';
+  }
+  html+='<h4>Limitations</h4>';
+  html+='<p>This is a point-in-time snapshot. Panels may underperform temporarily due to shading, dirt, snow, or clouds affecting part of the array. For best results, run during peak sun (10 AM–2 PM) on a clear day, and re-check on a different day to confirm any issues.</p>';
+  el.innerHTML=html;
 }
 
-function downloadReport() {
-  if (!analysisResult) return;
-  const blob = new Blob([JSON.stringify(analysisResult, null, 2)], { type: 'application/json' });
-  const url = URL.createObjectURL(blob);
-  const a = document.createElement('a');
-  a.href = url;
-  a.download = 'solar-checkup-' + new Date().toISOString().split('T')[0] + '.json';
-  a.click();
-  URL.revokeObjectURL(url);
+function renderInstaller(){
+  var r=analysisResult;document.getElementById('installerSummary').style.display='block';
+  var fl=r.panels.filter(function(p){return p.status==='watch'||p.status==='alert'}),sep='─'.repeat(50);
+  var t='SOLAR PANEL HEALTH CHECK REPORT\nGenerated: '+new Date(r.ts).toLocaleString()+'\n'+sep+'\n\nSystem: '+r.sys.n+' panels';
+  if(r.sys.model!=='Not specified')t+=' — '+r.sys.model;if(r.sys.watts!=='Not specified')t+=' ('+r.sys.watts+'W)';
+  t+='\n';if(r.sys.date!=='Not specified')t+='Installed: '+r.sys.date+'\n';
+  t+='Array Avg Peak: '+r.stats.maxAvg+'W\nSpread: '+r.stats.spread+'%\n\nFLAGGED PANELS:\n'+sep+'\n';
+  fl.forEach(function(p){t+='\n  Panel #'+p.index+'\n  Serial: '+p.serial+'\n  Status: '+p.status.toUpperCase()+'\n  Max: '+p.max+'W (avg: '+r.stats.maxAvg+'W)\n  vs Average: '+p.mr+'%\n';if(p.cur>0)t+='  Current: '+p.cur+'W\n'});
+  t+='\n'+sep+'\nGenerated by Solar Checkup\nhttps://mtnears.github.io/Solar-Checkup/\n';
+  document.getElementById('installerText').value=t;
 }
 
-function startOver() {
-  document.getElementById('report').classList.remove('visible');
-  document.getElementById('setup').style.display = 'block';
-  document.getElementById('step1').classList.remove('complete');
-  document.getElementById('step1').classList.add('active');
-  document.getElementById('step2').style.display = 'none';
-  document.getElementById('step2').classList.remove('active');
-  document.getElementById('pasteData').value = '';
-  clearStatus('loadStatus');
-  clearStatus('analyzeStatus');
-  document.getElementById('currentChart').style.display = 'none';
-  document.getElementById('installerSummary').style.display = 'none';
-  gatewayData = null;
-  productionData = null;
-  analysisResult = null;
-  window.scrollTo({ top: 0 });
-}
+function downloadReport(){if(!analysisResult)return;var b=new Blob([JSON.stringify(analysisResult,null,2)],{type:'application/json'}),u=URL.createObjectURL(b),a=document.createElement('a');a.href=u;a.download='solar-checkup-'+new Date().toISOString().split('T')[0]+'.json';a.click();URL.revokeObjectURL(u)}
 
-// ── Demo Mode (?demo in URL) ─────────────────────────────
+function startOver(){document.getElementById('report').classList.remove('visible');document.getElementById('setup').style.display='block';document.getElementById('step1').classList.remove('complete');document.getElementById('step1').classList.add('active');document.getElementById('step2').style.display='none';document.getElementById('step2').classList.remove('active');document.getElementById('pasteData').value='';clearStatus('loadStatus');clearStatus('analyzeStatus');document.getElementById('currentChart').style.display='none';document.getElementById('installerSummary').style.display='none';document.getElementById('specMatchBox').innerHTML='';gatewayData=null;analysisResult=null;window.scrollTo({top:0})}
 
-if (window.location.search.includes('demo')) {
-  document.addEventListener('DOMContentLoaded', () => {
-    const serials = [];
-    for (let i = 0; i < 16; i++) {
-      serials.push('53251906' + String(5000 + i).padStart(4, '0'));
-    }
-    gatewayData = serials.map((s, i) => {
-      let maxW = 275 + Math.floor(Math.random() * 30);
-      let curW = 180 + Math.floor(Math.random() * 40);
-      if (i === 3) { maxW = 220; curW = 130; }
-      if (i === 11) { maxW = 185; curW = 95; }
-      return { serialNumber: s, lastReportWatts: curW, maxReportWatts: maxW, lastReportDate: Math.floor(Date.now() / 1000) - 300 };
-    });
-    showStatus('loadStatus', 'success', '\u2713 Demo mode: Loaded ' + gatewayData.length + ' simulated panels with 2 underperformers.');
-    document.getElementById('step1').classList.remove('active');
-    document.getElementById('step1').classList.add('complete');
-    const step2 = document.getElementById('step2');
-    step2.style.display = 'block';
-    step2.classList.add('active');
-    document.getElementById('detectedInfo').textContent = 'Demo: ' + gatewayData.length + ' simulated panels';
-    document.getElementById('panelWatts').value = '400';
-    document.getElementById('panelModel').value = 'Demo Panel 400W';
-    document.getElementById('installDate').value = '2023-06-15';
+// ── Demo ─────────────────────────────────────────────────
+if(location.search.includes('demo')){
+  document.addEventListener('DOMContentLoaded',function(){
+    var sn=[];for(var i=0;i<16;i++)sn.push('53251906'+String(5000+i).padStart(4,'0'));
+    gatewayData=sn.map(function(s,i){var mx=275+Math.floor(Math.random()*30),cw=180+Math.floor(Math.random()*40);if(i===3){mx=220;cw=130}if(i===11){mx=185;cw=95}return{serialNumber:s,lastReportWatts:cw,maxReportWatts:mx,lastReportDate:Math.floor(Date.now()/1000)-300}});
+    showStatus('loadStatus','success','✓ Demo: '+gatewayData.length+' panels (2 underperformers)');
+    document.getElementById('step1').classList.remove('active');document.getElementById('step1').classList.add('complete');
+    var s2=document.getElementById('step2');s2.style.display='block';s2.classList.add('active');
+    document.getElementById('detectedInfo').textContent='Demo: '+gatewayData.length+' simulated panels';
+    document.getElementById('panelWatts').value='400';document.getElementById('panelModel').value='Demo Panel 400W';document.getElementById('installDate').value='2023-06-15';
   });
 }
 </script>
-
 </body>
 </html>
