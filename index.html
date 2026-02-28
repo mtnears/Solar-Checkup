@@ -157,7 +157,7 @@ textarea::placeholder{color:var(--text-dim)}
       </div>
       <div class="form-row">
         <div class="form-group"><label for="degradAnnual">Annual Degradation %</label><input type="number" id="degradAnnual" placeholder="0.5" step="0.1" min="0" max="5"><div class="help-text">Most panels: 0.25–0.5%/year after year 1.</div></div>
-        <div class="form-group"><label for="microModel">Microinverter Model</label><select id="microModel"><option value="">Unknown / Not sure</option><option value="IQ7">IQ7 — 250W (IQ7-60-2-US, IQ7-60-x-US)</option><option value="IQ7+">IQ7+ — 290W (IQ7PLUS-72-2-US)</option><option value="IQ7A">IQ7A — 349W (IQ7A-72-2-US)</option><option value="IQ8">IQ8 — 250W (IQ8-60-2-US)</option><option value="IQ8+">IQ8+ — 290W (IQ8PLUS-72-2-US)</option><option value="IQ8M">IQ8M — 310W (IQ8M-72-2-US)</option><option value="IQ8H">IQ8H — 384W (IQ8H-72-2-US)</option><option value="IQ8A">IQ8A — 349W (IQ8A-72-2-US)</option><option value="IQ8HC">IQ8HC — 384W (IQ8HC-72-2-US)</option></select><div class="help-text">Match the model from your Enphase app or install contract. The IQ8M-72-2-US = IQ8M, etc.</div></div>
+        <div class="form-group"><label for="microModel">Microinverter Model</label><select id="microModel"><option value="">Unknown / Not sure</option><optgroup label="IQ7 Series"><option value="IQ7">IQ7 — 250W (IQ7-60-2-US)</option><option value="IQ7+">IQ7+ — 290W (IQ7PLUS-72-2-US)</option><option value="IQ7A">IQ7A — 349W (IQ7A-72-2-US)</option><option value="IQ7X">IQ7X — 320W (IQ7X-96-2-US)</option></optgroup><optgroup label="IQ8 Series"><option value="IQ8">IQ8 — 245W (IQ8-60-2-US)</option><option value="IQ8+">IQ8+ — 290W (IQ8PLUS-72-2-US)</option><option value="IQ8M">IQ8M — 310W (IQ8M-72-2-US)</option><option value="IQ8MC">IQ8MC — 320W (IQ8MC-72-M-US) MC4</option><option value="IQ8A">IQ8A — 349W (IQ8A-72-2-US)</option><option value="IQ8AC">IQ8AC — 339W (IQ8AC-72-M-US) MC4</option><option value="IQ8H">IQ8H — 384W (IQ8H-72-2-US)</option><option value="IQ8HC">IQ8HC — 384W (IQ8HC-72-2-US)</option><option value="IQ8X">IQ8X — 380W (IQ8X-80-M-US)</option><option value="IQ8P">IQ8P — 460W (IQ8P-72-2-US)</option></optgroup></select><div class="help-text">Match the model from your Enphase app or install contract. IQ8M-72-2-US = IQ8M, IQ8MC = MC4 connector version, etc.</div></div>
       </div>
       <div class="form-row">
         <div class="form-group"><label for="arrayTilt">Roof Tilt (degrees, optional)</label><input type="number" id="arrayTilt" placeholder="e.g. 22" min="0" max="90"></div>
@@ -182,7 +182,7 @@ textarea::placeholder{color:var(--text-dim)}
     <div class="report-actions"><button class="btn btn-secondary" onclick="window.print()">🖨️ Print</button><button class="btn btn-secondary" onclick="downloadReport()">💾 Save JSON</button><button class="btn btn-primary" onclick="startOver()">Run Another Check</button></div>
   </div>
 
-  <div class="footer"><p>Solar Checkup v1.2 · Free &amp; open source. <a href="https://github.com/mtnears/Solar-Checkup" target="_blank">View source on GitHub</a> · No data collected.</p><p style="margin-top:.4rem">A companion tool from <a href="https://github.com/mtnears/FranklinWH-Automation" target="_blank">FranklinWH-Automation</a>. Support: <a href="https://buymeacoffee.com/MTNEARZ" target="_blank" style="color:var(--accent)">☕ Buy me a coffee</a> · <a href="https://github.com/sponsors/mtnears" target="_blank" style="color:var(--accent)">💜 GitHub Sponsors</a></p></div>
+  <div class="footer"><p>Solar Checkup v1.3 · Free &amp; open source. <a href="https://github.com/mtnears/Solar-Checkup" target="_blank">View source on GitHub</a> · No data collected.</p><p style="margin-top:.4rem">A companion tool from <a href="https://github.com/mtnears/FranklinWH-Automation" target="_blank">FranklinWH-Automation</a>. Support: <a href="https://buymeacoffee.com/MTNEARZ" target="_blank" style="color:var(--accent)">☕ Buy me a coffee</a> · <a href="https://github.com/sponsors/mtnears" target="_blank" style="color:var(--accent)">💜 GitHub Sponsors</a></p></div>
 </div>
 
 <script>
@@ -229,7 +229,7 @@ var PANEL_DB=[
 {m:"Axitec AXIblackpremium 410",w:410,p:384,d1:2.0,da:0.50},
 ];
 
-var MICRO_LIMITS={IQ7:250,"IQ7+":290,IQ7A:349,IQ8:250,"IQ8+":290,IQ8M:310,IQ8H:384,IQ8A:349,IQ8HC:384};
+var MICRO_LIMITS={IQ7:250,"IQ7+":290,IQ7A:349,IQ7X:320,IQ8:245,"IQ8+":290,IQ8M:310,IQ8MC:320,IQ8A:349,IQ8AC:339,IQ8H:384,IQ8HC:384,IQ8X:380,IQ8P:460};
 
 // ── Helpers ──────────────────────────────────────────────
 function toggleHelp(id){document.getElementById(id).classList.toggle('open')}
