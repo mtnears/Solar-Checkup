@@ -156,7 +156,11 @@ textarea::placeholder{color:var(--text-dim)}
       </div>
       <div class="form-row">
         <div class="form-group"><label for="degradAnnual">Annual Degradation %</label><input type="number" id="degradAnnual" placeholder="0.5" step="0.1" min="0" max="5"><div class="help-text">Most panels: 0.25–0.5%/year after year 1.</div></div>
+        <div class="form-group"><label for="microModel">Microinverter Model</label><select id="microModel"><option value="">Unknown / Not sure</option><option value="IQ7">Enphase IQ7 (250W)</option><option value="IQ7+">Enphase IQ7+ (290W)</option><option value="IQ7A">Enphase IQ7A (349W)</option><option value="IQ8">Enphase IQ8 (250W)</option><option value="IQ8+">Enphase IQ8+ (290W)</option><option value="IQ8M">Enphase IQ8M (310W)</option><option value="IQ8H">Enphase IQ8H (384W)</option><option value="IQ8A">Enphase IQ8A (349W)</option><option value="IQ8HC">Enphase IQ8HC (384W)</option></select><div class="help-text">Find this in your Enphase app or install contract. Helps with accurate clipping analysis.</div></div>
+      </div>
+      <div class="form-row">
         <div class="form-group"><label for="arrayTilt">Roof Tilt (degrees, optional)</label><input type="number" id="arrayTilt" placeholder="e.g. 22" min="0" max="90"></div>
+        <div></div>
       </div>
       <button class="btn btn-primary" onclick="runAnalysis()">Run Health Check ☀️</button>
       <div id="analyzeStatus"></div>
@@ -297,11 +301,18 @@ function runAnalysis(){
   var hasLive=curWatts.length>=4;
 
   // Clipping detection
-  var clip=false,clipCeil=0,clipNote='',clipMicro='';
-  if(pw>0&&maxAvg>0&&maxAvg/pw<0.75){
+  var userMicro=document.getElementById('microModel').value;
+  var clip=false,clipCeil=0,clipNote='',clipMicro=userMicro||'';
+  var microLimit=userMicro?MICRO_LIMITS[userMicro]:0;
+
+  if(userMicro&&pw>0&&microLimit>0&&pw>microLimit*1.1){
+    // User specified inverter and panel DC exceeds inverter AC limit
+    clip=true;clipCeil=microLimit;
+    clipNote='Your panels are rated '+pw+'W DC but your '+userMicro+' microinverters output a maximum of '+microLimit+'W AC. This is normal and expected — oversizing DC relative to the inverter improves low-light production. Health analysis uses peer comparison instead of the DC panel rating.';
+  } else if(!userMicro&&pw>0&&maxAvg>0&&maxAvg/pw<0.75){
+    // No inverter specified, but peaks are well below DC rating — detect clipping
     clip=true;clipCeil=maxMax;
-    for(var mn in MICRO_LIMITS){if(Math.abs(maxMax-MICRO_LIMITS[mn])<25){clipMicro=mn;break}}
-    clipNote=clipMicro?'Your panels are rated '+pw+'W DC but your microinverters (likely Enphase '+clipMicro+', max ~'+MICRO_LIMITS[clipMicro]+'W AC) limit output. This is normal and expected — the inverter converts DC to AC and has a lower ceiling. Health analysis uses peer comparison instead of the DC panel rating.':'Your panels are rated '+pw+'W DC but peak output is '+maxMax+'W, indicating microinverter clipping. This is normal. Health analysis uses peer comparison.';
+    clipNote='Your panels are rated '+pw+'W DC but peak output is '+maxMax+'W, suggesting microinverter clipping. This is normal. Select your microinverter model in Step 2 for more precise analysis. Health analysis uses peer comparison instead of the DC rating.';
   }
 
   // Degradation
@@ -333,7 +344,7 @@ function runAnalysis(){
   panels.forEach(function(p){hc[p.status]++});
   var spread=maxAvg>0?Math.round((maxMax-maxMin)/maxAvg*1000)/10:0;
 
-  analysisResult={ts:new Date().toISOString(),sys:{n:panels.length,model:pm||'Not specified',watts:pw||'Not specified',ptc:pp||null,date:id||'Not specified',tilt:tilt,d1:d1,da:da},stats:{maxAvg:Math.round(maxAvg),maxMax:maxMax,maxMin:maxMin,spread:spread,curAvg:Math.round(curAvg),live:hasLive},clip:{on:clip,ceil:clipCeil,note:clipNote,micro:clipMicro},deg:{age:age,factor:Math.round(df*1000)/10,basis:clip?'peer comparison (clipped)':pp?'PTC rating':'estimated PTC'},hc:hc,flagged:panels.filter(function(p){return p.status==='watch'||p.status==='alert'}).length,panels:panels};
+  analysisResult={ts:new Date().toISOString(),sys:{n:panels.length,model:pm||'Not specified',watts:pw||'Not specified',ptc:pp||null,date:id||'Not specified',tilt:tilt,d1:d1,da:da,micro:userMicro||'Not specified'},stats:{maxAvg:Math.round(maxAvg),maxMax:maxMax,maxMin:maxMin,spread:spread,curAvg:Math.round(curAvg),live:hasLive},clip:{on:clip,ceil:clipCeil,note:clipNote,micro:clipMicro},deg:{age:age,factor:Math.round(df*1000)/10,basis:clip?'peer comparison (clipped)':pp?'PTC rating':'estimated PTC'},hc:hc,flagged:panels.filter(function(p){return p.status==='watch'||p.status==='alert'}).length,panels:panels};
 
   renderReport();
 }
